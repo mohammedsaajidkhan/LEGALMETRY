@@ -3,11 +3,13 @@
 import 'package:flutter/material.dart';
 
 class AppTheme {
+  static const Color primary = Color(0xFF1E3A8A);
+
   static final ThemeData lightTheme = ThemeData(
     useMaterial3: true,
     colorScheme: ColorScheme.fromSeed(
-      seedColor: const Color(0xFF1E3A8A),
-      primary: const Color(0xFF1E3A8A),
+      seedColor: primary,
+      primary: primary,
       error: const Color(0xFFDC2626), // Critical Severity
     ),
   );
