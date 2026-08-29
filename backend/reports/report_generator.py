@@ -83,7 +83,7 @@ class ReportGenerator:
             "statutory_actions": {
                 "notice_type": "NONE (COMPLIANT)" if is_compliant else "IMPROVEMENT_NOTICE_JAN_VISHWAS_2026",
                 "notice_reference": notice_reference or (f"IN-{scan_id}" if not is_compliant else None),
-                "correction_window_days": 15 if not is_compliant else 0,
+                "correction_window_days": 15 if not is_compliant else 0,  # PLACEHOLDER: actual statutory window unconfirmed, verify before production deployment
                 "manual_verification_directive": manual_check_required,
             },
         }
