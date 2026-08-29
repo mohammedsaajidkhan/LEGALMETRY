@@ -1,4 +1,4 @@
-﻿# ============================================================================
+# ============================================================================
 # LEGALMETRY Role-Based Access Control (RBAC) (Person 1 - Data/Infra)
 # Enforcing 4 Statutory Roles + Consumer and Regional Data Isolation
 # ============================================================================
@@ -34,7 +34,7 @@ def get_current_user(
 
     try:
         payload = decode_access_token(token)
-        username: str = payload.get("username")
+        username: str = payload.get("username") or payload.get("sub")
         if username is None:
             raise credentials_exception
     except ExpiredSignatureError:
