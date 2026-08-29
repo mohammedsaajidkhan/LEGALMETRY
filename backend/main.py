@@ -1,6 +1,7 @@
 from fastapi import FastAPI, UploadFile, File, Form
 from typing import Optional
 from backend.auth.router import auth_router
+from backend.db.router_evidence import evidence_router
 
 app = FastAPI(
     title="LEGALMETRY Core API", 
@@ -8,8 +9,9 @@ app = FastAPI(
     description="AI-Assisted Compliance Scanner for Legal Metrology (Packaged Commodities) Rules, 2011"
 )
 
-# Include Authentication Router
+# Include Authentication and Evidence Routers
 app.include_router(auth_router)
+app.include_router(evidence_router)
 
 @app.get("/")
 def health_check():

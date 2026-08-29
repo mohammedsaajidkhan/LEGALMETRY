@@ -1,4 +1,4 @@
-﻿# ============================================================================
+# ============================================================================
 # LEGALMETRY MinIO Object Storage Client (Person 1 - Data/Infra)
 # S3-Compatible Storage for Evidence Photos and Generated PDF Reports
 # ============================================================================
@@ -90,6 +90,43 @@ class MinioStorageService:
         except S3Error as e:
             logger.error(f"Failed to upload evidence to MinIO: {e}")
             return False, "", sha256_hash
+
+    def store_violation_evidence(
+        self,
+        scan_id: str,
+        photo_bytes: bytes,
+        filename: str = "evidence.jpg",
+        content_type: str = "image/jpeg"
+    ) -> dict:
+        """
+        Stores violation photo evidence in MinIO and calculates SHA-256 hash.
+        """
+        sha256_hash = self.compute_sha256(photo_bytes)
+        object_key = f"scans/{scan_id}/{filename}"
+        success, obj_name, _ = self.upload_evidence(
+            file_bytes=photo_bytes,
+            object_name=object_key,
+            content_type=content_type
+        )
+        url = self.get_presigned_download_url(BUCKET_EVIDENCE, object_key)
+        return {
+            "success": success,
+            "bucket": BUCKET_EVIDENCE,
+            "key": object_key,
+            "sha256_hash": sha256_hash,
+            "url": url,
+            "size_bytes": len(photo_bytes)
+        }
+
+    def verify_photo_hash(self, photo_bytes: bytes, expected_hash: str) -> bool:
+        """
+        Verifies if raw photo bytes match the recorded SHA-256 hash.
+        Guarantees tamper-proofing and chain-of-custody validity.
+        """
+        if not photo_bytes or not expected_hash:
+            return False
+        computed = self.compute_sha256(photo_bytes)
+        return computed.lower() == expected_hash.lower().strip()
 
     def get_presigned_download_url(
         self,
