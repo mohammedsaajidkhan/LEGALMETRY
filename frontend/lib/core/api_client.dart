@@ -163,6 +163,8 @@ class ApiClient {
     required String fileName,
     required String category,
     bool coinDetected = true,
+    String? coinType,
+    double? coinDiameterMm,
   }) async {
     try {
       final uri = Uri.parse('$baseUrl/scan');
@@ -170,6 +172,12 @@ class ApiClient {
       
       request.fields['category'] = category;
       request.fields['coin_detected'] = coinDetected.toString();
+      if (coinType != null) {
+        request.fields['coin_type'] = coinType;
+      }
+      if (coinDiameterMm != null) {
+        request.fields['coin_diameter_mm'] = coinDiameterMm.toString();
+      }
       
       request.files.add(
         http.MultipartFile.fromBytes(

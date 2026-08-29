@@ -8,50 +8,48 @@
 ---
 
 ## Current Project State
-- `frontend/lib/core/theme/app_theme.dart` fully built with GIGW 3.0 tokens & severity logic.
-- `frontend/lib/core/api_client.dart` implemented with type-safe models for `/scan` API contract and offline mock data providers.
-- `frontend/lib/results/scan_results_screen.dart` (Screen B5) built with responsive declarations list/grid, mm font measurement tiles, severity-border cards, physical verification router honesty card, and live scenario switcher.
-- `frontend/lib/reports/report_export_screen.dart` (Screen B9) built with government inspection notice preview, SHA-256 evidence integrity badge, and export/share flows.
-- `frontend/lib/dashboard/inspector_dashboard.dart` (Screen B6) built with recent scan history, severity-colored borders, and pending statutory improvement notices.
-- `frontend/lib/core/routing/role_based_router.dart` updated with Inspector bottom navigation bar.
-- Dart static analysis: 0 errors.
+- **Checkpoint 1 (Hr 2:30-3:00) Complete**: Contract alignment verified between `shared/api_contract.yaml`, `backend/main.py`, and `frontend/lib/core/api_client.dart`. Zero contract mismatches identified.
+- `backend/reports/evidence_hash.py` (Module 2.13) fully implemented with SHA-256 evidence integrity hashing and multi-angle verification.
+- `backend/reports/report_generator.py` (Module 2.12) fully implemented with statutory two-tier inspection report assembly (lightweight compliant audit vs. full Jan Vishwas evidentiary improvement notice).
+- `frontend/lib/core/theme/app_theme.dart` active and referenced across all screens.
+- `frontend/lib/results/scan_results_screen.dart`, `frontend/lib/dashboard/inspector_dashboard.dart`, `frontend/lib/reports/report_export_screen.dart`, and `frontend/lib/core/routing/role_based_router.dart` fully integrated and rendering mock/real payloads.
+- Static analysis: 0 Dart errors, Python test execution 100% passing.
 
 ---
 
 ## Latest Changes
 
-### Session 2
+### Session 3
 **Date:** 2026-08-30
 
 #### Changes made
-- Implemented `ApiClient` in `frontend/lib/core/api_client.dart` with OpenAPI `/scan` schema serialization (`ExtractedFields`, `MeasurementsMm`, `ViolationItem`, `ScanResult`) and mock providers for compliant vs violation scenarios.
-- Implemented `ScanResultsScreen` (Screen B5) in `frontend/lib/results/scan_results_screen.dart` with language toggle (EN/हिन्दी), declaration cards, font measurements, severity badges, and sticky bottom action bar.
-- Implemented `ReportExportScreen` (Screen B9) in `frontend/lib/reports/report_export_screen.dart` with official notice preview and SHA-256 evidence hash.
-- Implemented `InspectorDashboard` (Screen B6) in `frontend/lib/dashboard/inspector_dashboard.dart` with recent scan list, stats row, and Jan Vishwas improvement notices.
-- Updated `RoleBasedRouter` in `frontend/lib/core/routing/role_based_router.dart` with persistent bottom navigation.
+- Conducted Checkpoint 1 contract mismatch analysis across `shared/api_contract.yaml`, `backend/main.py`, and `frontend/lib/core/api_client.dart`.
+- Enhanced `ApiClient.submitScan` to support optional `coin_metadata` (`coin_type`, `coin_diameter_mm`).
+- Implemented `backend/reports/evidence_hash.py` supporting `compute_sha256`, `compute_multi_photo_hashes`, `verify_evidence_integrity`, and `format_evidence_manifest`.
+- Implemented `backend/reports/report_generator.py` with `ReportGenerator.assemble_inspection_report` creating structured legal payloads for compliant passes and Jan Vishwas 2026 notices.
+- Validated Python report generator & SHA-256 modules via direct unit execution.
+- Validated frontend via Dart static analyzer (`analyze_files`: 0 errors).
 
 #### Files changed
+- `backend/reports/evidence_hash.py`
+- `backend/reports/report_generator.py`
 - `frontend/lib/core/api_client.dart`
-- `frontend/lib/results/scan_results_screen.dart`
-- `frontend/lib/reports/report_export_screen.dart`
-- `frontend/lib/dashboard/inspector_dashboard.dart`
-- `frontend/lib/core/routing/role_based_router.dart`
 - `AI_SESSION_LOG.md`
 
 #### Important decisions
-- Strictly adhered to Person 5 directory boundaries (no edits in Person 1, 2, 3, 4 files).
-- All visual elements and typography pull directly from `AppTheme` without hardcoded colors.
+- Retained strict two-tier report policy: routine passes remain lightweight database audits, while violations generate full evidentiary notices with SHA-256 fingerprints.
+- Isolated all changes to Person 5's designated directories (`backend/reports/`, `frontend/lib/core/`, `frontend/lib/results/`, `frontend/lib/dashboard/`, `frontend/lib/reports/`).
 
 #### Current status
-- Results screen, Inspector dashboard, Report export, and API client shells are complete and verified with Dart static analyzer.
+- Checkpoint 1 verified. Backend report generator and frontend UI shells are fully in sync with contract.
 
 #### Next steps
-- Prepare for Checkpoint 1 (Hr 2:30–3:00) and wire live backend `/scan` responses when Person 3 finishes the core pipeline.
+- Hour 3:00-4:30 milestone: Refine results screen against live pipeline outputs and prepare full PDF export document generator.
 
 ---
 
 ## Current Task
-> Wire live API integration and backend report generator when core pipeline endpoints are deployed.
+> Checkpoint 1 verification completed. Ready to proceed to Hour 3:00-4:30 schedule.
 
 ---
 
@@ -63,7 +61,7 @@
 ---
 
 ## Known Issues
-- None. Static analysis clean.
+- None.
 
 ---
 
