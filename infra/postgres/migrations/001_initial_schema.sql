@@ -1,0 +1,2 @@
+-- Migration 001: Initial Schema
+-- Managed by Person 1

@@ -1,0 +1,19 @@
+{
+  "table_i_font_size_minimums": {
+    "area_less_than_50_sq_cm": {
+      "min_font_height_mm": 1.0
+    },
+    "area_50_to_100_sq_cm": {
+      "min_font_height_mm": 1.5
+    },
+    "area_100_to_500_sq_cm": {
+      "min_font_height_mm": 2.0
+    },
+    "area_500_to_2500_sq_cm": {
+      "min_font_height_mm": 4.0
+    },
+    "area_greater_than_2500_sq_cm": {
+      "min_font_height_mm": 6.0
+    }
+  }
+}

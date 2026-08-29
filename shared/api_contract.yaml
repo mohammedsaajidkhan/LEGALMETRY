@@ -1,0 +1,83 @@
+openapi: 3.0.3
+info:
+  title: LEGALMETRY Scan API Contract
+  version: 1.0.0
+  description: Shared API contract locked after Pre-Flight for 5-person parallel build.
+paths:
+  /scan:
+    post:
+      summary: Scan packaged commodity image for compliance
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - image
+                - category
+              properties:
+                image:
+                  type: string
+                  format: binary
+                  description: Photo of packaged commodity
+                coin_detected:
+                  type: boolean
+                  description: Whether calibration coin is included in frame
+                coin_metadata:
+                  type: object
+                  properties:
+                    coin_type:
+                      type: string
+                      example: "1_rupee"
+                    diameter_mm:
+                      type: number
+                      example: 21.93
+                category:
+                  type: string
+                  example: "packaged_food"
+      responses:
+        '200':
+          description: Successful compliance evaluation
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  scan_id:
+                    type: string
+                  extracted_fields:
+                    type: object
+                    properties:
+                      mrp:
+                        type: string
+                      net_quantity:
+                        type: string
+                      manufacturer_address:
+                        type: string
+                      mfg_date:
+                        type: string
+                      consumer_care:
+                        type: string
+                  measurements_mm:
+                    type: object
+                    properties:
+                      font_height_mm:
+                        type: number
+                      principal_display_area_sq_cm:
+                        type: number
+                  violations:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        rule_id:
+                          type: string
+                        description:
+                          type: string
+                        severity:
+                          type: string
+                          enum: [CRITICAL, MODERATE, MINOR]
+                  overall_severity:
+                    type: string
+                    enum: [COMPLIANT, MINOR, MODERATE, CRITICAL]

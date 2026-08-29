@@ -1,0 +1,11 @@
+{
+  "mandatory_declarations": [
+    "name_and_address_of_manufacturer",
+    "country_of_origin",
+    "common_or_generic_name",
+    "net_quantity",
+    "month_and_year_of_manufacture",
+    "maximum_retail_price",
+    "consumer_care_details"
+  ]
+}
