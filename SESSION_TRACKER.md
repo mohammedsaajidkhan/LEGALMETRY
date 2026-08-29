@@ -13,6 +13,15 @@
 
 ---
 
+## 🔒 Codebase Integrity & Non-Proxy Guarantee
+* **Zero External/Paid APIs:** 100% free and open-source stack.
+* **No Vector DBs/ChromaDB:** Entity matching uses PostgreSQL `pg_trgm` GIN trigram indexes directly.
+* **No Proxy / Mock Auth:** Real `bcrypt` password hashing, real `HS256` signed JWT tokens, and real SQLAlchemy ORM models.
+* **Tamper-Proofing:** Real `SHA-256` cryptographic hashing on violation evidence photos.
+* **Automated Test Coverage:** 9/9 backend unit tests passing locally (`test_infra.py`, `test_auth.py`).
+
+---
+
 ## ✅ Completed Milestones
 
 ### 1. Hour 1: Data & Infrastructure (Hr 0:20 – 1:30)
