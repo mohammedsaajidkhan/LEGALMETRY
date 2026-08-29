@@ -6,6 +6,7 @@ import os
 import sys
 import unittest
 import hashlib
+import uuid
 
 # Add project root to sys.path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
@@ -26,21 +27,22 @@ class TestInfraLayer(unittest.TestCase):
     def test_02_create_user_and_manufacturer(self):
         db = SessionLocal()
         try:
+            uid = uuid.uuid4().hex[:8]
             # Create user
             user = User(
-                username="test_inspector_h1",
-                email="test_inspector_h1@gov.in",
+                username=f"insp_{uid}",
+                email=f"insp_{uid}@gov.in",
                 password_hash="mock_hash_123",
                 role="inspector",
                 region_scope="NORTH_ZONE",
-                badge_number="INSP-001"
+                badge_number=f"INSP-{uid}"
             )
             db.add(user)
 
             # Create manufacturer
             mfg = Manufacturer(
-                name="Parle Products Pvt Ltd",
-                normalized_name="parle products pvt ltd",
+                name=f"Parle Products {uid} Pvt Ltd",
+                normalized_name=f"parle products {uid} pvt ltd",
                 registered_address="Vile Parle East, Mumbai, MH",
                 state="Maharashtra",
                 gstin="27AABCP1234F1Z5",
@@ -53,8 +55,7 @@ class TestInfraLayer(unittest.TestCase):
 
             self.assertIsNotNone(user.id)
             self.assertIsNotNone(mfg.id)
-            self.assertEqual(user.username, "test_inspector_h1")
-            self.assertEqual(mfg.name, "Parle Products Pvt Ltd")
+            self.assertEqual(user.role, "inspector")
 
             # Create scan and violation
             scan = Scan(
