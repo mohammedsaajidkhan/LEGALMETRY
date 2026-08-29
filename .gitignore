@@ -23,3 +23,5 @@ Thumbs.db
 # Media / Local storage
 uploads/
 temp/
+
+*.db
