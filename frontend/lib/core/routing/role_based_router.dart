@@ -31,6 +31,7 @@ class _RoleBasedRouterState extends State<RoleBasedRouter> {
 
   @override
   Widget build(BuildContext context) {
+<<<<<<< HEAD
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
@@ -133,5 +134,8 @@ class _ProfilePlaceholderScreen extends StatelessWidget {
         ),
       ),
     );
+=======
+    return const CameraScreen(category: 'General');
+>>>>>>> capture-cv
   }
 }

@@ -10,6 +10,7 @@
 import 'package:flutter/material.dart';
 
 class AppTheme {
+<<<<<<< HEAD
   AppTheme._();
 
   // ---------------------------------------------------------------------------
@@ -167,6 +168,16 @@ class AppTheme {
     border: Border.all(
       color: isDark ? darkBorder : borderGrey,
       width: 1.0,
+=======
+  static const Color primary = Color(0xFF1E3A8A);
+
+  static final ThemeData lightTheme = ThemeData(
+    useMaterial3: true,
+    colorScheme: ColorScheme.fromSeed(
+      seedColor: primary,
+      primary: primary,
+      error: const Color(0xFFDC2626), // Critical Severity
+>>>>>>> capture-cv
     ),
   );
 
