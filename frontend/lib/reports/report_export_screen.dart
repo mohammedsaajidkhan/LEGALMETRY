@@ -29,7 +29,6 @@ class _ReportExportScreenState extends State<ReportExportScreen> {
 
   void _generatePdfReport() async {
     setState(() => _isGenerating = true);
-    // Simulate generation delay
     await Future.delayed(const Duration(milliseconds: 600));
     if (mounted) {
       setState(() {
@@ -52,7 +51,7 @@ class _ReportExportScreenState extends State<ReportExportScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Export Compliance Report'),
+        title: const Text('Export Statutory Report'),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(AppTheme.spacing16),
@@ -85,7 +84,7 @@ class _ReportExportScreenState extends State<ReportExportScreen> {
   }
 
   Widget _buildHeaderCard(bool isDark, ScanResult r) {
-    final severityColor = AppTheme.severityColor(r.overallSeverity);
+    final severityColor = AppTheme.severityColor(r.severity);
 
     return Container(
       padding: const EdgeInsets.all(AppTheme.spacing16),
@@ -125,6 +124,11 @@ class _ReportExportScreenState extends State<ReportExportScreen> {
   }
 
   Widget _buildReportPreviewCard(bool isDark, ScanResult r) {
+    final fontHeight = r.measurements.fontHeightMm?.toStringAsFixed(2) ?? 'Uncalibrated';
+    final pdp = r.measurements.principalDisplayAreaSqCm?.toStringAsFixed(1) ?? 'N/A';
+    final mfrName = r.extractedFields.manufacturerName ??
+        (r.extractedFields.manufacturerAddress ?? 'Unidentified Entity');
+
     return Container(
       padding: const EdgeInsets.all(AppTheme.spacing20),
       decoration: BoxDecoration(
@@ -163,15 +167,15 @@ class _ReportExportScreenState extends State<ReportExportScreen> {
           _buildPreviewRow('Inspection Reference', r.scanId),
           _buildPreviewRow('Date & Time', r.timestamp.toIso8601String().substring(0, 19).replaceAll('T', ' ')),
           _buildPreviewRow('Commodity Category', r.category),
-          _buildPreviewRow('Manufacturer / Entity', r.extractedFields.manufacturerAddress),
-          _buildPreviewRow('Declared MRP', r.extractedFields.mrp),
-          _buildPreviewRow('Declared Net Quantity', r.extractedFields.netQuantity),
-          _buildPreviewRow('Measured Font Height', '${r.measurementsMm.fontHeightMm.toStringAsFixed(2)} mm'),
-          _buildPreviewRow('Principal Display Area', '${r.measurementsMm.principalDisplayAreaSqCm.toStringAsFixed(1)} cm²'),
+          _buildPreviewRow('Manufacturer / Entity', mfrName),
+          _buildPreviewRow('Declared MRP', r.extractedFields.mrp ?? 'Missing'),
+          _buildPreviewRow('Declared Net Quantity', r.extractedFields.netQuantity ?? 'Missing'),
+          _buildPreviewRow('Measured Font Height', '$fontHeight mm'),
+          _buildPreviewRow('Principal Display Area', '$pdp cm²'),
           _buildPreviewRow(
             'Overall Compliance Status',
-            AppTheme.severityLabel(r.overallSeverity),
-            valueColor: AppTheme.severityColor(r.overallSeverity),
+            AppTheme.severityLabel(r.severity),
+            valueColor: AppTheme.severityColor(r.severity),
           ),
           if (r.violations.isNotEmpty) ...[
             const SizedBox(height: AppTheme.spacing12),
@@ -180,7 +184,7 @@ class _ReportExportScreenState extends State<ReportExportScreen> {
             ...r.violations.map(
               (v) => Padding(
                 padding: const EdgeInsets.only(left: 8.0, bottom: 4.0),
-                child: Text('• [${v.ruleId}] ${v.description}', style: AppTheme.body.copyWith(fontSize: 13)),
+                child: Text('• [${v.ruleReference}] ${v.description}', style: AppTheme.body.copyWith(fontSize: 13)),
               ),
             ),
           ],
@@ -215,7 +219,8 @@ class _ReportExportScreenState extends State<ReportExportScreen> {
   }
 
   Widget _buildEvidenceIntegrityCard(bool isDark, ScanResult r) {
-    final String hash = r.evidenceHash ?? 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855';
+    final String hash = r.evidence?.sha256Hash ??
+        'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855';
 
     return Container(
       padding: const EdgeInsets.all(AppTheme.spacing12),

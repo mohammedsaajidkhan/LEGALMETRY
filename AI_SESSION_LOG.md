@@ -8,48 +8,56 @@
 ---
 
 ## Current Project State
-- **Checkpoint 1 (Hr 2:30-3:00) Complete**: Contract alignment verified between `shared/api_contract.yaml`, `backend/main.py`, and `frontend/lib/core/api_client.dart`. Zero contract mismatches identified.
-- `backend/reports/evidence_hash.py` (Module 2.13) fully implemented with SHA-256 evidence integrity hashing and multi-angle verification.
-- `backend/reports/report_generator.py` (Module 2.12) fully implemented with statutory two-tier inspection report assembly (lightweight compliant audit vs. full Jan Vishwas evidentiary improvement notice).
-- `frontend/lib/core/theme/app_theme.dart` active and referenced across all screens.
-- `frontend/lib/results/scan_results_screen.dart`, `frontend/lib/dashboard/inspector_dashboard.dart`, `frontend/lib/reports/report_export_screen.dart`, and `frontend/lib/core/routing/role_based_router.dart` fully integrated and rendering mock/real payloads.
-- Static analysis: 0 Dart errors, Python test execution 100% passing.
+- **Hr 3:00-4:30 Milestone Complete**: `scan_results_screen.dart` fully built against real pipeline response schema and edge cases from `shared/api_contract.yaml`.
+- Integrated Entity Resolution & Manufacturer Health Index (MHI) card with color-calibrated score badges.
+- Built optical Table I font measurement deficit & PDP display card with mm calibration status.
+- Added interactive severity filter buttons (`ALL`, `CRITICAL`, `MODERATE`), remedy action tiles, and category-aware physical verification routing card (Sixth Schedule).
+- Built multi-scenario switcher for real pipeline demonstration (Compliant Pass, Font Deficit & Origin Violation, No Coin Detected, Low Confidence OCR).
+- Synchronized `report_export_screen.dart` and `inspector_dashboard.dart` to latest data models.
+- Dart static analysis: 0 errors.
 
 ---
 
 ## Latest Changes
 
-### Session 3
+### Session 4
 **Date:** 2026-08-30
 
 #### Changes made
-- Conducted Checkpoint 1 contract mismatch analysis across `shared/api_contract.yaml`, `backend/main.py`, and `frontend/lib/core/api_client.dart`.
-- Enhanced `ApiClient.submitScan` to support optional `coin_metadata` (`coin_type`, `coin_diameter_mm`).
-- Implemented `backend/reports/evidence_hash.py` supporting `compute_sha256`, `compute_multi_photo_hashes`, `verify_evidence_integrity`, and `format_evidence_manifest`.
-- Implemented `backend/reports/report_generator.py` with `ReportGenerator.assemble_inspection_report` creating structured legal payloads for compliant passes and Jan Vishwas 2026 notices.
-- Validated Python report generator & SHA-256 modules via direct unit execution.
-- Validated frontend via Dart static analyzer (`analyze_files`: 0 errors).
+- Upgraded `ApiClient` and models in `frontend/lib/core/api_client.dart` to deserialize full `ScanResponse` (`status`, `measurements` with `mm_per_pixel` and `table_i_minimum_mm`, `manufacturer` with `mhi_score`, `evidence` with `sha256_hash`, and `violations`).
+- Enhanced `ScanResultsScreen` in `frontend/lib/results/scan_results_screen.dart` with:
+  - Overall verdict status banner with GIGW 3.0 severity reflection.
+  - Pipeline degradation warning cards for `no_coin_detected` and `low_confidence`.
+  - MHI score display tile and entity resolution status.
+  - Measured font height vs. Table I minimum with calculated deficit in mm.
+  - Rule 6 mandatory declaration cards (MRP, Net Qty, Manufacturer, Date, Consumer Care) with 4px left-border severity accents.
+  - Statutory violations section with severity filtering and Jan Vishwas corrective remedy box.
+  - Category-aware Sixth Schedule physical verification directive card.
+  - Cryptographic evidence SHA-256 fingerprint card.
+- Synchronized `report_export_screen.dart` and `inspector_dashboard.dart` with updated data models.
+- Verified 0 static analysis errors via `analyze_files`.
 
 #### Files changed
-- `backend/reports/evidence_hash.py`
-- `backend/reports/report_generator.py`
 - `frontend/lib/core/api_client.dart`
+- `frontend/lib/results/scan_results_screen.dart`
+- `frontend/lib/reports/report_export_screen.dart`
+- `frontend/lib/dashboard/inspector_dashboard.dart`
 - `AI_SESSION_LOG.md`
 
 #### Important decisions
-- Retained strict two-tier report policy: routine passes remain lightweight database audits, while violations generate full evidentiary notices with SHA-256 fingerprints.
-- Isolated all changes to Person 5's designated directories (`backend/reports/`, `frontend/lib/core/`, `frontend/lib/results/`, `frontend/lib/dashboard/`, `frontend/lib/reports/`).
+- Strictly enforced GIGW 3.0 severity color reflection (Red for Critical, Amber for Moderate, Green for Minor/Compliant, Gold for Needs Review/Low Confidence).
+- Preserved strict boundary isolation (modified only Person 5 files).
 
 #### Current status
-- Checkpoint 1 verified. Backend report generator and frontend UI shells are fully in sync with contract.
+- Results screen and data models complete and ready for Hour 4:30-5:30 dashboard and evidence storage milestones.
 
 #### Next steps
-- Hour 3:00-4:30 milestone: Refine results screen against live pipeline outputs and prepare full PDF export document generator.
+- Hour 4:30-5:30 milestone: Finalize Inspector Dashboard risk list sorting and integrate MinIO photo evidence viewer.
 
 ---
 
 ## Current Task
-> Checkpoint 1 verification completed. Ready to proceed to Hour 3:00-4:30 schedule.
+> Results screen fully built against real pipeline response. Ready for Hour 4:30-5:30 milestones.
 
 ---
 

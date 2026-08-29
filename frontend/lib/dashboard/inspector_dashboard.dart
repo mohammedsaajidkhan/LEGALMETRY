@@ -23,33 +23,43 @@ class _InspectorDashboardState extends State<InspectorDashboard> {
   bool _isLoading = false;
 
   final List<ScanResult> _recentScans = [
-    ApiClient.getMockScanResult(category: 'Packaged Food & Beverage', simulateViolation: true),
-    ApiClient.getMockScanResult(category: 'Personal Care & Cosmetics', simulateViolation: false),
+    ApiClient.getMockScanResult(scenario: MockScenario.fontDeficitAndMissingOrigin),
+    ApiClient.getMockScanResult(scenario: MockScenario.compliant),
     ScanResult(
       scanId: 'SCAN-2026-IND-0839',
+      status: 'ok',
       category: 'Household Detergents',
       extractedFields: const ExtractedFields(
-        mrp: 'Rs. 120.00',
+        mrp: '₹120.00',
         netQuantity: '1 kg',
-        manufacturerAddress: 'CleanCare India Ltd, Haridwar',
+        manufacturerName: 'CleanCare India Ltd',
+        manufacturerAddress: 'Industrial Area, Haridwar, Uttarakhand',
         mfgDate: '10/2025',
         consumerCare: '1800-44-3322',
       ),
-      measurementsMm: const MeasurementsMm(
-        fontHeightMm: 1.8,
+      measurements: const Measurements(
+        fontHeightMm: 1.80,
+        tableIMinimumMm: 2.50,
         principalDisplayAreaSqCm: 250.0,
-        requiredMinFontHeightMm: 2.5,
       ),
       violations: const [
-        ViolationItem(
-          ruleId: 'Rule 8 / Table I',
+        Violation(
+          field: 'font_height',
+          ruleReference: 'Rule 8 / Table I',
           description: 'Font height 1.8 mm is below the mandatory 2.5 mm for PDP area >200 cm².',
-          severity: 'MODERATE',
+          severity: 'Moderate',
         ),
       ],
-      overallSeverity: 'MODERATE',
+      severity: 'Moderate',
+      manufacturer: const ManufacturerResult(
+        manufacturerId: 'MFR-IND-00088',
+        matchType: 'exact',
+        mhiScore: 82.0,
+      ),
       manualCheckRequired: 'Sixth Schedule: Check net quantity scale variation.',
-      evidenceHash: 'a1b2c3d4e5f67890123456789abcdef0123456789abcdef0123456789abcdef0',
+      evidence: const EvidenceManifest(
+        sha256Hash: 'a1b2c3d4e5f67890123456789abcdef0123456789abcdef0123456789abcdef0',
+      ),
       timestamp: DateTime.now().subtract(const Duration(hours: 3)),
     ),
   ];
@@ -166,6 +176,9 @@ class _InspectorDashboardState extends State<InspectorDashboard> {
   }
 
   Widget _buildScanRowItem(BuildContext context, ScanResult scan, bool isDark) {
+    final mfrText = scan.extractedFields.manufacturerName ??
+        (scan.extractedFields.manufacturerAddress ?? 'Unidentified Entity');
+
     return InkWell(
       onTap: () {
         Navigator.of(context).push(
@@ -178,7 +191,7 @@ class _InspectorDashboardState extends State<InspectorDashboard> {
       child: Container(
         margin: const EdgeInsets.only(bottom: AppTheme.spacing8),
         padding: const EdgeInsets.all(AppTheme.spacing12),
-        decoration: AppTheme.cardDecorationWithSeverity(scan.overallSeverity, isDark: isDark),
+        decoration: AppTheme.cardDecorationWithSeverity(scan.severity, isDark: isDark),
         child: Row(
           children: [
             Expanded(
@@ -194,7 +207,7 @@ class _InspectorDashboardState extends State<InspectorDashboard> {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    scan.extractedFields.manufacturerAddress,
+                    mfrText,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: AppTheme.caption,
@@ -204,13 +217,13 @@ class _InspectorDashboardState extends State<InspectorDashboard> {
             ),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: AppTheme.statusChipDecoration(scan.overallSeverity, isDark: isDark),
+              decoration: AppTheme.statusChipDecoration(scan.severity, isDark: isDark),
               child: Text(
-                AppTheme.severityLabel(scan.overallSeverity),
+                AppTheme.severityLabel(scan.severity),
                 style: TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.bold,
-                  color: AppTheme.severityColor(scan.overallSeverity),
+                  color: AppTheme.severityColor(scan.severity),
                 ),
               ),
             ),
