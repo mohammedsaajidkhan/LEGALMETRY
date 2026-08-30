@@ -8,48 +8,46 @@
 ---
 
 ## Current Project State
-- **Checkpoint 1 (Hr 2:30-3:00) Complete**: Contract alignment verified between `shared/api_contract.yaml`, `backend/main.py`, and `frontend/lib/core/api_client.dart`. Zero contract mismatches identified.
-- `backend/reports/evidence_hash.py` (Module 2.13) fully implemented with SHA-256 evidence integrity hashing and multi-angle verification.
-- `backend/reports/report_generator.py` (Module 2.12) fully implemented with statutory two-tier inspection report assembly (lightweight compliant audit vs. full Jan Vishwas evidentiary improvement notice).
-- `frontend/lib/core/theme/app_theme.dart` active and referenced across all screens.
-- `frontend/lib/results/scan_results_screen.dart`, `frontend/lib/dashboard/inspector_dashboard.dart`, `frontend/lib/reports/report_export_screen.dart`, and `frontend/lib/core/routing/role_based_router.dart` fully integrated and rendering mock/real payloads.
-- Static analysis: 0 Dart errors, Python test execution 100% passing.
+- **Clean UI Norms & Dynamic State Synchronized**: Completely eliminated all hardcoded mock artifacts from UI screen files.
+- `inspector_dashboard.dart` renders real dynamic statistics (`totalScans`, `totalViolations`, `totalOpenNotices`) and GIGW 3.0 standard empty states on a clean, fresh app installation.
+- `scan_results_screen.dart` strictly receives and renders the incoming `ScanResult` without development switcher banners. Renders GIGW empty state if navigated to before any scan.
+- `api_client.dart` features live `ScanStore` for reactive session inspection state and real HTTP backend communication.
+- Dart static analysis: 0 errors.
 
 ---
 
 ## Latest Changes
 
-### Session 3
+### Session 5
 **Date:** 2026-08-30
 
 #### Changes made
-- Conducted Checkpoint 1 contract mismatch analysis across `shared/api_contract.yaml`, `backend/main.py`, and `frontend/lib/core/api_client.dart`.
-- Enhanced `ApiClient.submitScan` to support optional `coin_metadata` (`coin_type`, `coin_diameter_mm`).
-- Implemented `backend/reports/evidence_hash.py` supporting `compute_sha256`, `compute_multi_photo_hashes`, `verify_evidence_integrity`, and `format_evidence_manifest`.
-- Implemented `backend/reports/report_generator.py` with `ReportGenerator.assemble_inspection_report` creating structured legal payloads for compliant passes and Jan Vishwas 2026 notices.
-- Validated Python report generator & SHA-256 modules via direct unit execution.
-- Validated frontend via Dart static analyzer (`analyze_files`: 0 errors).
+- Removed all hardcoded mock data lists from UI screens.
+- Refactored `inspector_dashboard.dart` to use dynamic `ScanStore.instance` bindings and GIGW 3.0 empty-state cards (icon + plain-language guidance + action triggers) when total scans equal 0.
+- Refactored `scan_results_screen.dart` to render clean GIGW 3.0 inspection verdict layout for real incoming scans, and a clean empty state when no scan verdict is active.
+- Verified all styling, typography, touch targets, and color tokens strictly reference `AppTheme`.
+- Verified 0 static analysis errors via `analyze_files`.
 
 #### Files changed
-- `backend/reports/evidence_hash.py`
-- `backend/reports/report_generator.py`
 - `frontend/lib/core/api_client.dart`
+- `frontend/lib/dashboard/inspector_dashboard.dart`
+- `frontend/lib/results/scan_results_screen.dart`
 - `AI_SESSION_LOG.md`
 
 #### Important decisions
-- Retained strict two-tier report policy: routine passes remain lightweight database audits, while violations generate full evidentiary notices with SHA-256 fingerprints.
-- Isolated all changes to Person 5's designated directories (`backend/reports/`, `frontend/lib/core/`, `frontend/lib/results/`, `frontend/lib/dashboard/`, `frontend/lib/reports/`).
+- Conformed strictly to the "fresh installation" user experience requirement: empty states are displayed when no scans exist, and real scan records dynamically populate the UI when captured.
+- Maintained 100% boundary isolation (only Person 5 files modified).
 
 #### Current status
-- Checkpoint 1 verified. Backend report generator and frontend UI shells are fully in sync with contract.
+- UI screens and data layers are clean, production-ready, and conform to the UI Design Context and AI Agent Build Context norms.
 
 #### Next steps
-- Hour 3:00-4:30 milestone: Refine results screen against live pipeline outputs and prepare full PDF export document generator.
+- Complete Hour 4:30-5:30 milestones and prepare for Checkpoint 2 live end-to-end testing.
 
 ---
 
 ## Current Task
-> Checkpoint 1 verification completed. Ready to proceed to Hour 3:00-4:30 schedule.
+> Clean UI norms implemented with dynamic state and GIGW empty states.
 
 ---
 
