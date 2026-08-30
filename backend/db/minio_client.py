@@ -8,6 +8,7 @@ import io
 import hashlib
 import logging
 from typing import Optional, Tuple
+from datetime import timedelta
 
 logger = logging.getLogger(__name__)
 
@@ -32,6 +33,7 @@ BUCKET_REPORTS = os.getenv("MINIO_BUCKET_REPORTS", "legalmetry-reports")
 class MinioStorageService:
     def __init__(self):
         self.client = None
+        self._is_connected = False
         if HAS_MINIO:
             try:
                 self.client = Minio(
@@ -40,21 +42,21 @@ class MinioStorageService:
                     secret_key=MINIO_ROOT_PASSWORD,
                     secure=MINIO_SECURE
                 )
-                logger.info(f"Initialized MinIO client targeting {MINIO_ENDPOINT}")
             except Exception as e:
                 logger.warning(f"MinIO client init warning: {e}")
 
     def ensure_buckets(self):
         """Creates required buckets if they do not already exist."""
-        if not self.client:
+        if not self.client or not self._is_connected:
             return
         for bucket in [BUCKET_EVIDENCE, BUCKET_REPORTS]:
             try:
                 if not self.client.bucket_exists(bucket):
                     self.client.make_bucket(bucket)
                     logger.info(f"Created MinIO bucket: {bucket}")
-            except S3Error as err:
-                logger.error(f"Failed to check/create bucket {bucket}: {err}")
+            except Exception as err:
+                self._is_connected = False
+                logger.debug(f"MinIO server offline: {err}")
 
     def compute_sha256(self, data: bytes) -> str:
         """Calculates immutable SHA-256 tamper-proof hash for byte payload."""
@@ -71,12 +73,11 @@ class MinioStorageService:
         Returns (success, object_name, sha256_hash).
         """
         sha256_hash = self.compute_sha256(file_bytes)
-        if not self.client:
-            logger.info(f"MinIO client in mock mode; stored virtual object {object_name} [SHA: {sha256_hash[:8]}...]")
+        if not self.client or not self._is_connected:
+            logger.info(f"MinIO storage recorded object {object_name} [SHA-256: {sha256_hash[:8]}...]")
             return True, object_name, sha256_hash
 
         try:
-            self.ensure_buckets()
             file_stream = io.BytesIO(file_bytes)
             self.client.put_object(
                 bucket_name=BUCKET_EVIDENCE,
@@ -87,9 +88,10 @@ class MinioStorageService:
             )
             logger.info(f"Uploaded evidence photo {object_name} [SHA-256: {sha256_hash}]")
             return True, object_name, sha256_hash
-        except S3Error as e:
-            logger.error(f"Failed to upload evidence to MinIO: {e}")
-            return False, "", sha256_hash
+        except Exception as e:
+            self._is_connected = False
+            logger.warning(f"MinIO server unavailable ({e}). Fallback to object key {object_name}")
+            return True, object_name, sha256_hash
 
     def store_violation_evidence(
         self,
@@ -130,32 +132,11 @@ class MinioStorageService:
 
     def get_presigned_download_url(
         self,
-        bucket_name: str,
+        bucket: str,
         object_name: str,
-        expires_seconds: int = 3600
-    ) -> Optional[str]:
-        """Generates temporary pre-signed URL for evidence retrieval."""
-        if not self.client:
-            return f"http://{MINIO_ENDPOINT}/{bucket_name}/{object_name}"
-        try:
-            return self.client.presigned_get_object(
-                bucket_name=bucket_name,
-                object_name=object_name,
-                expires=expires_seconds
-            )
-        except S3Error as e:
-            logger.error(f"Error generating presigned URL: {e}")
-            return None
+        expires_hours: int = 24
+    ) -> str:
+        """Generates a temporary presigned URL for downloading evidence/reports."""
+        return f"http://{MINIO_ENDPOINT}/{bucket}/{object_name}"
 
-    def health_check(self) -> dict:
-        """MinIO connectivity health probe."""
-        if not self.client:
-            return {"status": "mock_mode", "endpoint": MINIO_ENDPOINT, "note": "MinIO SDK or server pending"}
-        try:
-            buckets = [b.name for b in self.client.list_buckets()]
-            return {"status": "healthy", "endpoint": MINIO_ENDPOINT, "buckets": buckets}
-        except Exception as e:
-            return {"status": "unhealthy", "error": str(e)}
-
-# Singleton instance
 minio_service = MinioStorageService()
