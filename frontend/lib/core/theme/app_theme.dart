@@ -24,6 +24,13 @@ class AppTheme {
   static const Color minorGreen = Color(0xFF7ED321); // Minor violations / Compliant status
   static const Color compliantGreen = Color(0xFF7ED321); // Compliant status
   static const Color needsReviewGold = Color(0xFFB8860B); // Low-confidence, pending human review
+
+  // Aliases for multi-module compatibility
+  static const Color severityCritical = criticalRed;
+  static const Color severityModerate = moderateAmber;
+  static const Color severityMinor = minorGreen;
+  static const Color severityCompliant = compliantGreen;
+  static const Color severityNeedsReview = needsReviewGold;
   
   static const Color backgroundWhite = Color(0xFFFFFFFF); // Main background
   static const Color surfaceLight = Color(0xFFF2F6FA); // Cards, alternating table rows

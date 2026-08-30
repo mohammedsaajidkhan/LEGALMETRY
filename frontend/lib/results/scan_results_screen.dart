@@ -5,9 +5,10 @@
 // Governing Standard: GIGW 3.0 / UI Design Context Document B5
 // Displays compliance verdict, Rule 6 declarations, real-world font mm
 // measurements, MHI manufacturer index, severity badges, and physical routing.
-// Clean production-ready UI conforming strictly to UI Design Context norms.
+// Supports direct route arguments from Camera screen and live backend processing.
 // ==============================================================================
 
+import 'dart:io';
 import 'package:flutter/material.dart';
 import '../core/theme/app_theme.dart';
 import '../core/api_client.dart';
@@ -29,14 +30,75 @@ class ScanResultsScreen extends StatefulWidget {
 class _ScanResultsScreenState extends State<ScanResultsScreen> {
   ScanResult? _result;
   bool _isHindi = false;
+  bool _isLoadingScan = false;
+  String? _scanErrorMessage;
+  bool _hasProcessedArguments = false;
   String _selectedSeverityFilter = 'ALL';
 
   @override
   void initState() {
     super.initState();
-    // Use initial result or the latest scan logged in ScanStore
+    // Use initial result or latest scan logged in ScanStore
     _result = widget.initialResult ??
         (ScanStore.instance.scans.isNotEmpty ? ScanStore.instance.scans.first : null);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_hasProcessedArguments) {
+      _hasProcessedArguments = true;
+      final args = ModalRoute.of(context)?.settings.arguments;
+      if (args is ScanResult) {
+        setState(() => _result = args);
+      } else if (args is Map<String, dynamic>) {
+        final imagePath = args['imagePath'] as String?;
+        final category = args['category'] as String? ?? 'General';
+        if (imagePath != null) {
+          _processImageCapture(imagePath, category);
+        }
+      }
+    }
+  }
+
+  Future<void> _processImageCapture(String imagePath, String category) async {
+    setState(() {
+      _isLoadingScan = true;
+      _scanErrorMessage = null;
+    });
+
+    try {
+      final file = File(imagePath);
+      if (await file.exists()) {
+        final bytes = await file.readAsBytes();
+        const client = ApiClient();
+        final scanResult = await client.submitScan(
+          imageBytes: bytes,
+          fileName: imagePath.split(Platform.pathSeparator).last,
+          category: category,
+        );
+        if (mounted) {
+          setState(() {
+            _result = scanResult;
+            _isLoadingScan = false;
+          });
+        }
+      } else {
+        if (mounted) {
+          setState(() {
+            _isLoadingScan = false;
+            _scanErrorMessage = 'Captured photo file not found on local disk.';
+          });
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoadingScan = false;
+          _scanErrorMessage = 'Backend pipeline connection pending. Please verify FastAPI backend is active.';
+        });
+      }
+    }
   }
 
   @override
@@ -46,9 +108,11 @@ class _ScanResultsScreenState extends State<ScanResultsScreen> {
 
     return Scaffold(
       appBar: _buildAppBar(isDark),
-      body: _result == null
-          ? _buildNoScanEmptyState(context, isDark)
-          : _buildResultsContent(context, isDark, isWide),
+      body: _isLoadingScan
+          ? _buildLoadingState(isDark)
+          : (_result == null
+              ? _buildNoScanEmptyState(context, isDark)
+              : _buildResultsContent(context, isDark, isWide)),
     );
   }
 
@@ -86,6 +150,38 @@ class _ScanResultsScreenState extends State<ScanResultsScreen> {
   }
 
   // ---------------------------------------------------------------------------
+  // Loading State during Backend OCR / Verification
+  // ---------------------------------------------------------------------------
+  Widget _buildLoadingState(bool isDark) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(AppTheme.spacing24),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const CircularProgressIndicator(color: AppTheme.primaryNavy, strokeWidth: 3),
+            const SizedBox(height: AppTheme.spacing20),
+            Text(
+              _isHindi ? 'विधिक मापविज्ञान पाइपलाइन विश्लेषण जारी...' : 'Analyzing Commodity Compliance...',
+              style: AppTheme.headingMedium.copyWith(
+                color: isDark ? Colors.white : AppTheme.primaryNavy,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              _isHindi
+                  ? 'सिक्का अंशांकन, फॉन्ट आकार एवं अनिवार्य लेबल घोषणाओं की समीक्षा की जा रही है।'
+                  : 'Processing optical coin reference calibration, Table I font measurements, and Rule 6 declarations.',
+              textAlign: TextAlign.center,
+              style: AppTheme.caption.copyWith(fontSize: 13),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ---------------------------------------------------------------------------
   // GIGW 3.0 Empty State (When no scan has been performed yet)
   // ---------------------------------------------------------------------------
   Widget _buildNoScanEmptyState(BuildContext context, bool isDark) {
@@ -111,6 +207,22 @@ class _ScanResultsScreenState extends State<ScanResultsScreen> {
               textAlign: TextAlign.center,
               style: AppTheme.caption.copyWith(fontSize: 13),
             ),
+            if (_scanErrorMessage != null) ...[
+              const SizedBox(height: AppTheme.spacing16),
+              Container(
+                padding: const EdgeInsets.all(AppTheme.spacing12),
+                decoration: BoxDecoration(
+                  color: AppTheme.criticalRed.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+                  border: Border.all(color: AppTheme.criticalRed),
+                ),
+                child: Text(
+                  _scanErrorMessage!,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(color: AppTheme.criticalRed, fontSize: 12),
+                ),
+              ),
+            ],
             const SizedBox(height: AppTheme.spacing20),
             ElevatedButton.icon(
               onPressed: () {
