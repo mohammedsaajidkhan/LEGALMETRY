@@ -8,56 +8,46 @@
 ---
 
 ## Current Project State
-- **Hr 3:00-4:30 Milestone Complete**: `scan_results_screen.dart` fully built against real pipeline response schema and edge cases from `shared/api_contract.yaml`.
-- Integrated Entity Resolution & Manufacturer Health Index (MHI) card with color-calibrated score badges.
-- Built optical Table I font measurement deficit & PDP display card with mm calibration status.
-- Added interactive severity filter buttons (`ALL`, `CRITICAL`, `MODERATE`), remedy action tiles, and category-aware physical verification routing card (Sixth Schedule).
-- Built multi-scenario switcher for real pipeline demonstration (Compliant Pass, Font Deficit & Origin Violation, No Coin Detected, Low Confidence OCR).
-- Synchronized `report_export_screen.dart` and `inspector_dashboard.dart` to latest data models.
+- **Clean UI Norms & Dynamic State Synchronized**: Completely eliminated all hardcoded mock artifacts from UI screen files.
+- `inspector_dashboard.dart` renders real dynamic statistics (`totalScans`, `totalViolations`, `totalOpenNotices`) and GIGW 3.0 standard empty states on a clean, fresh app installation.
+- `scan_results_screen.dart` strictly receives and renders the incoming `ScanResult` without development switcher banners. Renders GIGW empty state if navigated to before any scan.
+- `api_client.dart` features live `ScanStore` for reactive session inspection state and real HTTP backend communication.
 - Dart static analysis: 0 errors.
 
 ---
 
 ## Latest Changes
 
-### Session 4
+### Session 5
 **Date:** 2026-08-30
 
 #### Changes made
-- Upgraded `ApiClient` and models in `frontend/lib/core/api_client.dart` to deserialize full `ScanResponse` (`status`, `measurements` with `mm_per_pixel` and `table_i_minimum_mm`, `manufacturer` with `mhi_score`, `evidence` with `sha256_hash`, and `violations`).
-- Enhanced `ScanResultsScreen` in `frontend/lib/results/scan_results_screen.dart` with:
-  - Overall verdict status banner with GIGW 3.0 severity reflection.
-  - Pipeline degradation warning cards for `no_coin_detected` and `low_confidence`.
-  - MHI score display tile and entity resolution status.
-  - Measured font height vs. Table I minimum with calculated deficit in mm.
-  - Rule 6 mandatory declaration cards (MRP, Net Qty, Manufacturer, Date, Consumer Care) with 4px left-border severity accents.
-  - Statutory violations section with severity filtering and Jan Vishwas corrective remedy box.
-  - Category-aware Sixth Schedule physical verification directive card.
-  - Cryptographic evidence SHA-256 fingerprint card.
-- Synchronized `report_export_screen.dart` and `inspector_dashboard.dart` with updated data models.
+- Removed all hardcoded mock data lists from UI screens.
+- Refactored `inspector_dashboard.dart` to use dynamic `ScanStore.instance` bindings and GIGW 3.0 empty-state cards (icon + plain-language guidance + action triggers) when total scans equal 0.
+- Refactored `scan_results_screen.dart` to render clean GIGW 3.0 inspection verdict layout for real incoming scans, and a clean empty state when no scan verdict is active.
+- Verified all styling, typography, touch targets, and color tokens strictly reference `AppTheme`.
 - Verified 0 static analysis errors via `analyze_files`.
 
 #### Files changed
 - `frontend/lib/core/api_client.dart`
-- `frontend/lib/results/scan_results_screen.dart`
-- `frontend/lib/reports/report_export_screen.dart`
 - `frontend/lib/dashboard/inspector_dashboard.dart`
+- `frontend/lib/results/scan_results_screen.dart`
 - `AI_SESSION_LOG.md`
 
 #### Important decisions
-- Strictly enforced GIGW 3.0 severity color reflection (Red for Critical, Amber for Moderate, Green for Minor/Compliant, Gold for Needs Review/Low Confidence).
-- Preserved strict boundary isolation (modified only Person 5 files).
+- Conformed strictly to the "fresh installation" user experience requirement: empty states are displayed when no scans exist, and real scan records dynamically populate the UI when captured.
+- Maintained 100% boundary isolation (only Person 5 files modified).
 
 #### Current status
-- Results screen and data models complete and ready for Hour 4:30-5:30 dashboard and evidence storage milestones.
+- UI screens and data layers are clean, production-ready, and conform to the UI Design Context and AI Agent Build Context norms.
 
 #### Next steps
-- Hour 4:30-5:30 milestone: Finalize Inspector Dashboard risk list sorting and integrate MinIO photo evidence viewer.
+- Complete Hour 4:30-5:30 milestones and prepare for Checkpoint 2 live end-to-end testing.
 
 ---
 
 ## Current Task
-> Results screen fully built against real pipeline response. Ready for Hour 4:30-5:30 milestones.
+> Clean UI norms implemented with dynamic state and GIGW empty states.
 
 ---
 

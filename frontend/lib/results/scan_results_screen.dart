@@ -5,6 +5,7 @@
 // Governing Standard: GIGW 3.0 / UI Design Context Document B5
 // Displays compliance verdict, Rule 6 declarations, real-world font mm
 // measurements, MHI manufacturer index, severity badges, and physical routing.
+// Clean production-ready UI conforming strictly to UI Design Context norms.
 // ==============================================================================
 
 import 'package:flutter/material.dart';
@@ -25,22 +26,16 @@ class ScanResultsScreen extends StatefulWidget {
 }
 
 class _ScanResultsScreenState extends State<ScanResultsScreen> {
-  late ScanResult _result;
+  ScanResult? _result;
   bool _isHindi = false;
   String _selectedSeverityFilter = 'ALL';
 
   @override
   void initState() {
     super.initState();
+    // Use initial result or the latest scan logged in ScanStore
     _result = widget.initialResult ??
-        ApiClient.getMockScanResult(scenario: MockScenario.fontDeficitAndMissingOrigin);
-  }
-
-  void _switchScenario(MockScenario scenario) {
-    setState(() {
-      _result = ApiClient.getMockScanResult(scenario: scenario);
-      _selectedSeverityFilter = 'ALL';
-    });
+        (ScanStore.instance.scans.isNotEmpty ? ScanStore.instance.scans.first : null);
   }
 
   @override
@@ -50,86 +45,14 @@ class _ScanResultsScreenState extends State<ScanResultsScreen> {
 
     return Scaffold(
       appBar: _buildAppBar(isDark),
-      body: Column(
-        children: [
-          // Scenario Switcher for Interactive Demo & Multi-Case Testing
-          _buildScenarioSwitcherBar(isDark),
-
-          // Main Scrollable Results Feed
-          Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(AppTheme.spacing16),
-              child: Center(
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 1000),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      // 1. Overall Verdict Banner
-                      _buildVerdictBanner(isDark),
-                      const SizedBox(height: AppTheme.spacing16),
-
-                      // 2. Degradation / Pipeline Warning Banner (if status != 'ok')
-                      if (_result.status != 'ok') ...[
-                        _buildDegradationWarningBanner(isDark),
-                        const SizedBox(height: AppTheme.spacing16),
-                      ],
-
-                      // 3. Manufacturer & MHI Health Index Card
-                      if (_result.manufacturer != null && _result.manufacturer!.manufacturerId != null) ...[
-                        _buildManufacturerMhiCard(isDark),
-                        const SizedBox(height: AppTheme.spacing16),
-                      ],
-
-                      // 4. Optical Font & PDP Physical Measurements Card
-                      _buildMeasurementCard(isDark),
-                      const SizedBox(height: AppTheme.spacing20),
-
-                      // 5. Rule 6 Mandatory Declarations Section
-                      _buildSectionHeader(
-                        _isHindi ? 'अनिवार्य लेबल घोषणाएं (नियम 6)' : 'Mandatory Label Declarations (Rule 6)',
-                        Icons.checklist_rtl,
-                        isDark,
-                      ),
-                      const SizedBox(height: AppTheme.spacing12),
-                      if (isWide) _buildDeclarationsGrid(isDark) else _buildDeclarationsList(isDark),
-                      const SizedBox(height: AppTheme.spacing20),
-
-                      // 6. Statutory Violations Section (if any exist)
-                      if (_result.hasViolations) ...[
-                        _buildViolationsSection(isDark),
-                        const SizedBox(height: AppTheme.spacing20),
-                      ],
-
-                      // 7. Category-Aware Verification Router Note (Honesty Card)
-                      if (_result.manualCheckRequired != null) ...[
-                        _buildManualCheckCard(isDark),
-                        const SizedBox(height: AppTheme.spacing20),
-                      ],
-
-                      // 8. Cryptographic Evidence Fingerprint Manifest
-                      if (_result.evidence != null && _result.evidence!.sha256Hash != null) ...[
-                        _buildEvidenceManifestCard(isDark),
-                        const SizedBox(height: AppTheme.spacing20),
-                      ],
-
-                      const SizedBox(height: AppTheme.spacing32),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ),
-
-          // Sticky Bottom Action Bar
-          _buildStickyActionBar(context, isDark),
-        ],
-      ),
+      body: _result == null
+          ? _buildNoScanEmptyState(context, isDark)
+          : _buildResultsContent(context, isDark, isWide),
     );
   }
 
   // ---------------------------------------------------------------------------
-  // Top App Bar with Language Toggle & Emblem Identity
+  // Top App Bar with Language Toggle (GIGW 3.0 Standard)
   // ---------------------------------------------------------------------------
   PreferredSizeWidget _buildAppBar(bool isDark) {
     return AppBar(
@@ -162,47 +85,30 @@ class _ScanResultsScreenState extends State<ScanResultsScreen> {
   }
 
   // ---------------------------------------------------------------------------
-  // Scenario Switcher Bar (For testing all real pipeline responses)
+  // GIGW 3.0 Empty State (When no scan has been performed yet)
   // ---------------------------------------------------------------------------
-  Widget _buildScenarioSwitcherBar(bool isDark) {
-    return Container(
-      color: isDark ? AppTheme.darkSurface : AppTheme.surfaceLight,
-      padding: const EdgeInsets.symmetric(horizontal: AppTheme.spacing16, vertical: AppTheme.spacing8),
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: Row(
+  Widget _buildNoScanEmptyState(BuildContext context, bool isDark) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(AppTheme.spacing24),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
+            Icon(Icons.fact_check_outlined, size: 64, color: isDark ? Colors.white38 : AppTheme.borderGrey),
+            const SizedBox(height: AppTheme.spacing16),
             Text(
-              _isHindi ? 'परिदृश्य:' : 'Pipeline Response:',
-              style: AppTheme.caption.copyWith(fontWeight: FontWeight.bold),
+              _isHindi ? 'कोई सक्रिय स्कैन परिणाम नहीं' : 'No Active Scan Verdict',
+              style: AppTheme.headingLarge.copyWith(
+                color: isDark ? Colors.white : AppTheme.primaryNavy,
+              ),
             ),
-            const SizedBox(width: AppTheme.spacing12),
-            _buildScenarioChip(
-              label: 'Compliant Pass',
-              isSelected: _result.isCompliant && _result.status == 'ok',
-              color: AppTheme.compliantGreen,
-              onTap: () => _switchScenario(MockScenario.compliant),
-            ),
-            const SizedBox(width: AppTheme.spacing8),
-            _buildScenarioChip(
-              label: 'Font Deficit & Origin Violation',
-              isSelected: _result.hasViolations && _result.status == 'ok',
-              color: AppTheme.criticalRed,
-              onTap: () => _switchScenario(MockScenario.fontDeficitAndMissingOrigin),
-            ),
-            const SizedBox(width: AppTheme.spacing8),
-            _buildScenarioChip(
-              label: 'No Coin Detected',
-              isSelected: _result.status == 'no_coin_detected',
-              color: AppTheme.needsReviewGold,
-              onTap: () => _switchScenario(MockScenario.noCoinDetected),
-            ),
-            const SizedBox(width: AppTheme.spacing8),
-            _buildScenarioChip(
-              label: 'Low Confidence OCR',
-              isSelected: _result.status == 'low_confidence',
-              color: AppTheme.moderateAmber,
-              onTap: () => _switchScenario(MockScenario.lowConfidenceOcr),
+            const SizedBox(height: AppTheme.spacing8),
+            Text(
+              _isHindi
+                  ? 'कृपया परिणाम और वैधानिक समीक्षा देखने के लिए पहले उत्पाद का फोटो लें।'
+                  : 'Capture or upload a packaged commodity photo with a reference coin to inspect declarations and measurements.',
+              textAlign: TextAlign.center,
+              style: AppTheme.caption.copyWith(fontSize: 13),
             ),
           ],
         ),
@@ -210,35 +116,95 @@ class _ScanResultsScreenState extends State<ScanResultsScreen> {
     );
   }
 
-  Widget _buildScenarioChip({
-    required String label,
-    required bool isSelected,
-    required Color color,
-    required VoidCallback onTap,
-  }) {
-    return ChoiceChip(
-      label: Text(label),
-      selected: isSelected,
-      onSelected: (_) => onTap(),
-      selectedColor: color.withOpacity(0.2),
-      labelStyle: TextStyle(
-        fontSize: 12,
-        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-        color: isSelected ? color : null,
-      ),
+  // ---------------------------------------------------------------------------
+  // Main Results Content Feed
+  // ---------------------------------------------------------------------------
+  Widget _buildResultsContent(BuildContext context, bool isDark, bool isWide) {
+    final result = _result!;
+
+    return Column(
+      children: [
+        Expanded(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(AppTheme.spacing16),
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 1000),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    // 1. Overall Verdict Banner
+                    _buildVerdictBanner(result, isDark),
+                    const SizedBox(height: AppTheme.spacing16),
+
+                    // 2. Degradation Warning Banner (if status != 'ok')
+                    if (result.status != 'ok') ...[
+                      _buildDegradationWarningBanner(result, isDark),
+                      const SizedBox(height: AppTheme.spacing16),
+                    ],
+
+                    // 3. Manufacturer Entity & MHI Card
+                    if (result.manufacturer != null && result.manufacturer!.manufacturerId != null) ...[
+                      _buildManufacturerMhiCard(result, isDark),
+                      const SizedBox(height: AppTheme.spacing16),
+                    ],
+
+                    // 4. Optical Font & PDP Physical Measurements Card
+                    _buildMeasurementCard(result, isDark),
+                    const SizedBox(height: AppTheme.spacing20),
+
+                    // 5. Rule 6 Mandatory Declarations Section
+                    _buildSectionHeader(
+                      _isHindi ? 'अनिवार्य लेबल घोषणाएं (नियम 6)' : 'Mandatory Label Declarations (Rule 6)',
+                      Icons.checklist_rtl,
+                      isDark,
+                    ),
+                    const SizedBox(height: AppTheme.spacing12),
+                    if (isWide) _buildDeclarationsGrid(result, isDark) else _buildDeclarationsList(result, isDark),
+                    const SizedBox(height: AppTheme.spacing20),
+
+                    // 6. Statutory Violations Section (if violations exist)
+                    if (result.hasViolations) ...[
+                      _buildViolationsSection(result, isDark),
+                      const SizedBox(height: AppTheme.spacing20),
+                    ],
+
+                    // 7. Category-Aware Verification Router Directive (Honesty Card)
+                    if (result.manualCheckRequired != null) ...[
+                      _buildManualCheckCard(result, isDark),
+                      const SizedBox(height: AppTheme.spacing20),
+                    ],
+
+                    // 8. Cryptographic Evidence Manifest Card
+                    if (result.evidence != null && result.evidence!.sha256Hash != null) ...[
+                      _buildEvidenceManifestCard(result, isDark),
+                      const SizedBox(height: AppTheme.spacing20),
+                    ],
+
+                    const SizedBox(height: AppTheme.spacing32),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+
+        // Sticky Bottom Action Bar
+        _buildStickyActionBar(context, result, isDark),
+      ],
     );
   }
 
   // ---------------------------------------------------------------------------
   // 1. Overall Verdict Banner
   // ---------------------------------------------------------------------------
-  Widget _buildVerdictBanner(bool isDark) {
-    final severityColor = AppTheme.severityColor(_result.severity);
-    final severityLabel = AppTheme.severityLabel(_result.severity);
+  Widget _buildVerdictBanner(ScanResult r, bool isDark) {
+    final severityColor = AppTheme.severityColor(r.severity);
+    final severityLabel = AppTheme.severityLabel(r.severity);
 
     return Container(
       padding: const EdgeInsets.all(AppTheme.spacing16),
-      decoration: AppTheme.cardDecorationWithSeverity(_result.severity, isDark: isDark),
+      decoration: AppTheme.cardDecorationWithSeverity(r.severity, isDark: isDark),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -250,12 +216,12 @@ class _ScanResultsScreenState extends State<ScanResultsScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Scan Reference: ${_result.scanId}',
+                      'Scan Reference: ${r.scanId}',
                       style: AppTheme.caption.copyWith(fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      'Category: ${_result.category}',
+                      'Category: ${r.category}',
                       style: AppTheme.headingSmall.copyWith(
                         color: isDark ? Colors.white70 : AppTheme.secondaryBlue,
                       ),
@@ -263,7 +229,6 @@ class _ScanResultsScreenState extends State<ScanResultsScreen> {
                   ],
                 ),
               ),
-              // Overall Severity Badge
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: AppTheme.spacing12, vertical: AppTheme.spacing6),
                 decoration: BoxDecoration(
@@ -274,7 +239,7 @@ class _ScanResultsScreenState extends State<ScanResultsScreen> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Icon(
-                      _result.isCompliant ? Icons.verified : Icons.gavel,
+                      r.isCompliant ? Icons.verified : Icons.gavel,
                       color: Colors.white,
                       size: 16,
                     ),
@@ -295,13 +260,13 @@ class _ScanResultsScreenState extends State<ScanResultsScreen> {
           ),
           const Divider(height: AppTheme.spacing20),
           Text(
-            _result.isCompliant
+            r.isCompliant
                 ? (_isHindi
                     ? 'लेबल की सभी घोषणाएं और फॉन्ट आयाम विधिक मापविज्ञान (पैकेज्ड कमोडिटीज) नियम, 2011 के अनुसार पूर्णतः वैध हैं।'
                     : 'All mandatory label declarations and physical font dimensions comply fully with Legal Metrology Rules, 2011.')
                 : (_isHindi
-                    ? 'कुल ${_result.violations.length} वैधानिक उल्लंघन पाए गए। जन विश्वास अधिनियम, 2026 के अंतर्गत 15-दिवसीय सुधार नोटिस देय है।'
-                    : 'Total ${_result.violations.length} statutory violation(s) detected. Statutory 15-day Improvement Notice required under Jan Vishwas Reform.'),
+                    ? 'कुल ${r.violations.length} वैधानिक उल्लंघन पाए गए। जन विश्वास अधिनियम, 2026 के अंतर्गत 15-दिवसीय सुधार नोटिस देय है।'
+                    : 'Total ${r.violations.length} statutory violation(s) detected. Statutory 15-day Improvement Notice required under Jan Vishwas Reform.'),
             style: AppTheme.bodyBold.copyWith(
               color: isDark ? AppTheme.darkTextPrimary : AppTheme.textPrimary,
             ),
@@ -312,9 +277,9 @@ class _ScanResultsScreenState extends State<ScanResultsScreen> {
   }
 
   // ---------------------------------------------------------------------------
-  // 2. Degradation / Pipeline Warning Banner
+  // 2. Pipeline Degradation Warning Banner
   // ---------------------------------------------------------------------------
-  Widget _buildDegradationWarningBanner(bool isDark) {
+  Widget _buildDegradationWarningBanner(ScanResult r, bool isDark) {
     return Container(
       padding: const EdgeInsets.all(AppTheme.spacing12),
       decoration: BoxDecoration(
@@ -328,9 +293,9 @@ class _ScanResultsScreenState extends State<ScanResultsScreen> {
           const SizedBox(width: AppTheme.spacing12),
           Expanded(
             child: Text(
-              _result.status == 'no_coin_detected'
-                  ? 'Reference coin not detected in image. Fallback mode enabled: font height estimated using default pixel density.'
-                  : 'Low OCR confidence detected on label segment. Please review ambiguous fields physically.',
+              r.status == 'no_coin_detected'
+                  ? 'Reference coin not detected in image. Fallback mode: font measurements uncalibrated.'
+                  : 'Low OCR confidence detected on label. Please review ambiguous fields physically.',
               style: AppTheme.body.copyWith(fontSize: 13),
             ),
           ),
@@ -342,8 +307,8 @@ class _ScanResultsScreenState extends State<ScanResultsScreen> {
   // ---------------------------------------------------------------------------
   // 3. Manufacturer Entity & MHI Card
   // ---------------------------------------------------------------------------
-  Widget _buildManufacturerMhiCard(bool isDark) {
-    final mfr = _result.manufacturer!;
+  Widget _buildManufacturerMhiCard(ScanResult r, bool isDark) {
+    final mfr = r.manufacturer!;
     final mhi = mfr.mhiScore ?? 100.0;
     final mhiColor = mhi >= 80 ? AppTheme.compliantGreen : (mhi >= 50 ? AppTheme.moderateAmber : AppTheme.criticalRed);
 
@@ -391,7 +356,7 @@ class _ScanResultsScreenState extends State<ScanResultsScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      _result.extractedFields.manufacturerName ?? 'Identified Manufacturer',
+                      r.extractedFields.manufacturerName ?? (r.extractedFields.manufacturerAddress ?? 'Identified Manufacturer'),
                       style: AppTheme.bodyBold,
                     ),
                     const SizedBox(height: 2),
@@ -424,10 +389,10 @@ class _ScanResultsScreenState extends State<ScanResultsScreen> {
   }
 
   // ---------------------------------------------------------------------------
-  // 4. Real-World Optical Font & PDP Measurements Card
+  // 4. Optical Font & PDP Measurements Card
   // ---------------------------------------------------------------------------
-  Widget _buildMeasurementCard(bool isDark) {
-    final m = _result.measurements;
+  Widget _buildMeasurementCard(ScanResult r, bool isDark) {
+    final m = r.measurements;
     final isFontPass = m.isFontCompliant;
     final fontHeight = m.fontHeightMm ?? 0.0;
     final minReq = m.tableIMinimumMm ?? 2.0;
@@ -474,7 +439,7 @@ class _ScanResultsScreenState extends State<ScanResultsScreen> {
               Expanded(
                 child: _buildMetricTile(
                   title: _isHindi ? 'मापा गया फॉन्ट आकार' : 'Measured Font Height',
-                  value: '${fontHeight.toStringAsFixed(2)} mm',
+                  value: fontHeight > 0 ? '${fontHeight.toStringAsFixed(2)} mm' : 'Uncalibrated',
                   subtitle: 'Mandatory Minimum: ${minReq.toStringAsFixed(2)} mm',
                   isPassing: isFontPass,
                   isDark: isDark,
@@ -485,14 +450,14 @@ class _ScanResultsScreenState extends State<ScanResultsScreen> {
                 child: _buildMetricTile(
                   title: _isHindi ? 'मुख्य प्रदर्शन क्षेत्र (PDP)' : 'Display Area (PDP)',
                   value: '${pdp.toStringAsFixed(1)} cm²',
-                  subtitle: 'Table I Bracket: 100-200 cm²',
+                  subtitle: 'Table I Area Bracket',
                   isPassing: true,
                   isDark: isDark,
                 ),
               ),
             ],
           ),
-          if (!isFontPass) ...[
+          if (!isFontPass && fontHeight > 0) ...[
             const SizedBox(height: AppTheme.spacing8),
             Text(
               '⚠️ Font Deficit of ${m.fontDeficitMm.toStringAsFixed(2)} mm detected against Table I statutory threshold.',
@@ -543,17 +508,17 @@ class _ScanResultsScreenState extends State<ScanResultsScreen> {
   }
 
   // ---------------------------------------------------------------------------
-  // 5. Rule 6 Mandatory Declarations Cards
+  // 5. Rule 6 Mandatory Declarations Section
   // ---------------------------------------------------------------------------
-  Widget _buildDeclarationsList(bool isDark) {
-    final f = _result.extractedFields;
+  Widget _buildDeclarationsList(ScanResult r, bool isDark) {
+    final f = r.extractedFields;
     return Column(
       children: [
         _buildFieldCard('Maximum Retail Price (MRP)', f.mrp, 'Rule 6(1)(e)', isDark),
         const SizedBox(height: AppTheme.spacing8),
         _buildFieldCard('Net Quantity & Units', f.netQuantity, 'Rule 6(1)(d)', isDark),
         const SizedBox(height: AppTheme.spacing8),
-        _buildFieldCard('Manufacturer / Packer Details', f.manufacturerAddress, 'Rule 6(1)(a)', isDark),
+        _buildFieldCard('Manufacturer / Packer Details', f.manufacturerAddress ?? f.manufacturerName, 'Rule 6(1)(a)', isDark),
         const SizedBox(height: AppTheme.spacing8),
         _buildFieldCard('Month & Year of Mfg / Import', f.mfgDate, 'Rule 6(1)(b)', isDark),
         const SizedBox(height: AppTheme.spacing8),
@@ -562,8 +527,8 @@ class _ScanResultsScreenState extends State<ScanResultsScreen> {
     );
   }
 
-  Widget _buildDeclarationsGrid(bool isDark) {
-    final f = _result.extractedFields;
+  Widget _buildDeclarationsGrid(ScanResult r, bool isDark) {
+    final f = r.extractedFields;
     return Wrap(
       spacing: AppTheme.spacing12,
       runSpacing: AppTheme.spacing12,
@@ -578,7 +543,7 @@ class _ScanResultsScreenState extends State<ScanResultsScreen> {
         ),
         SizedBox(
           width: 480,
-          child: _buildFieldCard('Manufacturer / Packer Details', f.manufacturerAddress, 'Rule 6(1)(a)', isDark),
+          child: _buildFieldCard('Manufacturer / Packer Details', f.manufacturerAddress ?? f.manufacturerName, 'Rule 6(1)(a)', isDark),
         ),
         SizedBox(
           width: 480,
@@ -643,12 +608,12 @@ class _ScanResultsScreenState extends State<ScanResultsScreen> {
   }
 
   // ---------------------------------------------------------------------------
-  // 6. Statutory Violations & Remedies List
+  // 6. Statutory Violations & Remedies Section
   // ---------------------------------------------------------------------------
-  Widget _buildViolationsSection(bool isDark) {
+  Widget _buildViolationsSection(ScanResult r, bool isDark) {
     final filteredViolations = _selectedSeverityFilter == 'ALL'
-        ? _result.violations
-        : _result.violations.where((v) => v.severity.toUpperCase() == _selectedSeverityFilter).toList();
+        ? r.violations
+        : r.violations.where((v) => v.severity.toUpperCase() == _selectedSeverityFilter).toList();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -662,7 +627,6 @@ class _ScanResultsScreenState extends State<ScanResultsScreen> {
               isDark,
               color: AppTheme.criticalRed,
             ),
-            // Severity Filter Buttons
             Row(
               children: [
                 _buildFilterChip('ALL'),
@@ -770,9 +734,9 @@ class _ScanResultsScreenState extends State<ScanResultsScreen> {
   }
 
   // ---------------------------------------------------------------------------
-  // 7. Category-Aware Verification Router Note (Honesty Card per B5)
+  // 7. Sixth Schedule Physical Verification Directive Card
   // ---------------------------------------------------------------------------
-  Widget _buildManualCheckCard(bool isDark) {
+  Widget _buildManualCheckCard(ScanResult r, bool isDark) {
     return Container(
       padding: const EdgeInsets.all(AppTheme.spacing14),
       decoration: BoxDecoration(
@@ -795,7 +759,7 @@ class _ScanResultsScreenState extends State<ScanResultsScreen> {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  _result.manualCheckRequired!,
+                  r.manualCheckRequired!,
                   style: AppTheme.body.copyWith(fontSize: 13),
                 ),
               ],
@@ -809,7 +773,7 @@ class _ScanResultsScreenState extends State<ScanResultsScreen> {
   // ---------------------------------------------------------------------------
   // 8. Cryptographic Evidence Manifest Card
   // ---------------------------------------------------------------------------
-  Widget _buildEvidenceManifestCard(bool isDark) {
+  Widget _buildEvidenceManifestCard(ScanResult r, bool isDark) {
     return Container(
       padding: const EdgeInsets.all(AppTheme.spacing12),
       decoration: BoxDecoration(
@@ -828,7 +792,7 @@ class _ScanResultsScreenState extends State<ScanResultsScreen> {
                 Text('SHA-256 Cryptographic Evidence Fingerprint', style: AppTheme.caption.copyWith(fontWeight: FontWeight.bold)),
                 const SizedBox(height: 2),
                 SelectableText(
-                  _result.evidence!.sha256Hash!,
+                  r.evidence!.sha256Hash!,
                   style: const TextStyle(fontFamily: 'monospace', fontSize: 11, color: AppTheme.textSecondary),
                 ),
               ],
@@ -842,7 +806,7 @@ class _ScanResultsScreenState extends State<ScanResultsScreen> {
   // ---------------------------------------------------------------------------
   // Sticky Bottom Action Bar
   // ---------------------------------------------------------------------------
-  Widget _buildStickyActionBar(BuildContext context, bool isDark) {
+  Widget _buildStickyActionBar(BuildContext context, ScanResult r, bool isDark) {
     return Container(
       padding: const EdgeInsets.all(AppTheme.spacing16),
       decoration: BoxDecoration(
@@ -868,7 +832,7 @@ class _ScanResultsScreenState extends State<ScanResultsScreen> {
                 onPressed: () {
                   Navigator.of(context).push(
                     MaterialPageRoute(
-                      builder: (_) => ReportExportScreen(scanResult: _result),
+                      builder: (_) => ReportExportScreen(scanResult: r),
                     ),
                   );
                 },

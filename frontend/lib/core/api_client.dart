@@ -1,8 +1,9 @@
 // ==============================================================================
-// LEGALMETRY — Backend API Client & Data Models
+// LEGALMETRY — Backend API Client, Data Models & Scan State Store
 // Track 5: UI / Reports (Person 5)
 //
 // Aligned with shared/api_contract.yaml (POST /scan)
+// Clean production-ready client with zero hardcoded mock data.
 // ==============================================================================
 
 import 'dart:convert';
@@ -215,7 +216,7 @@ class ScanResult {
 
   bool get hasViolations => violations.isNotEmpty;
 
-  factory ScanResult.fromJson(Map<String, dynamic> json, {String category = 'packaged_food'}) {
+  factory ScanResult.fromJson(Map<String, dynamic> json, {String category = 'Packaged Commodity'}) {
     final rawViolations = json['violations'] as List<dynamic>? ?? [];
     final violationsList = rawViolations
         .map((v) => Violation.fromJson(v as Map<String, dynamic>))
@@ -242,6 +243,29 @@ class ScanResult {
   }
 }
 
+/// Centralized In-Memory & Backend Synchronized Scan Store
+class ScanStore {
+  ScanStore._();
+  static final ScanStore instance = ScanStore._();
+
+  final List<ScanResult> _scans = [];
+
+  List<ScanResult> get scans => List.unmodifiable(_scans);
+
+  int get totalScans => _scans.length;
+  int get totalViolations => _scans.where((s) => s.hasViolations).length;
+  int get totalOpenNotices => _scans.where((s) => s.severity.toUpperCase() == 'CRITICAL' || s.severity.toUpperCase() == 'MODERATE').length;
+
+  void addScan(ScanResult result) {
+    _scans.insert(0, result);
+  }
+
+  void clear() {
+    _scans.clear();
+  }
+}
+
+/// Real Backend HTTP Client
 class ApiClient {
   final String baseUrl;
 
@@ -256,202 +280,36 @@ class ApiClient {
     String? referenceType = 'coin',
     double? knownDiameterMm = 27.0,
   }) async {
-    try {
-      final uri = Uri.parse('$baseUrl/scan');
-      final request = http.MultipartRequest('POST', uri);
+    final uri = Uri.parse('$baseUrl/scan');
+    final request = http.MultipartRequest('POST', uri);
 
-      request.fields['category'] = category;
-      request.fields['coin_detected'] = coinDetected.toString();
-      if (referenceType != null) {
-        request.fields['reference_type'] = referenceType;
-      }
-      if (knownDiameterMm != null) {
-        request.fields['known_diameter_mm'] = knownDiameterMm.toString();
-      }
+    request.fields['category'] = category;
+    request.fields['coin_detected'] = coinDetected.toString();
+    if (referenceType != null) {
+      request.fields['reference_type'] = referenceType;
+    }
+    if (knownDiameterMm != null) {
+      request.fields['known_diameter_mm'] = knownDiameterMm.toString();
+    }
 
-      request.files.add(
-        http.MultipartFile.fromBytes(
-          'image',
-          imageBytes,
-          filename: fileName,
-        ),
-      );
+    request.files.add(
+      http.MultipartFile.fromBytes(
+        'image',
+        imageBytes,
+        filename: fileName,
+      ),
+    );
 
-      final streamedResponse = await request.send();
-      final response = await http.Response.fromStream(streamedResponse);
+    final streamedResponse = await request.send();
+    final response = await http.Response.fromStream(streamedResponse);
 
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body) as Map<String, dynamic>;
-        return ScanResult.fromJson(data, category: category);
-      } else {
-        return getMockScanResult(category: category, scenario: MockScenario.compliant);
-      }
-    } catch (_) {
-      return getMockScanResult(category: category, scenario: MockScenario.compliant);
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body) as Map<String, dynamic>;
+      final result = ScanResult.fromJson(data, category: category);
+      ScanStore.instance.addScan(result);
+      return result;
+    } else {
+      throw Exception('Backend returned status ${response.statusCode}: ${response.body}');
     }
   }
-
-  /// Provides standardized Mock data covering all contract scenarios for testing and demonstration
-  static ScanResult getMockScanResult({
-    String category = 'Packaged Food',
-    MockScenario scenario = MockScenario.fontDeficitAndMissingOrigin,
-    bool simulateViolation = false,
-  }) {
-    if (simulateViolation) {
-      scenario = MockScenario.fontDeficitAndMissingOrigin;
-    }
-
-    switch (scenario) {
-      case MockScenario.compliant:
-        return ScanResult(
-          scanId: 'SCAN-2026-DL-1081',
-          status: 'ok',
-          category: category,
-          extractedFields: const ExtractedFields(
-            mrp: '₹85.00 (Incl. of all taxes)',
-            netQuantity: '500 g',
-            manufacturerName: 'National Foods Corporation Ltd',
-            manufacturerAddress: 'Plot 18, Industrial Estate, Gurugram, Haryana 122015',
-            mfgDate: '01/2026',
-            consumerCare: 'care@nationalfoods.in | 1800-22-9900',
-          ),
-          measurements: const Measurements(
-            mmPerPixel: 0.082,
-            fontHeightMm: 2.35,
-            tableIMinimumMm: 2.00,
-            principalDisplayAreaSqCm: 180.0,
-          ),
-          violations: const [],
-          severity: 'None',
-          manufacturer: const ManufacturerResult(
-            manufacturerId: 'MFR-IND-00482',
-            matchType: 'exact',
-            mhiScore: 96.5,
-          ),
-          evidence: const EvidenceManifest(
-            photoUrl: 'minio://legalmetry-evidence/scans/SCAN-2026-DL-1081.jpg',
-            sha256Hash: '4a7d1ed414474e4033ac29ccb8653d9b048a82d01d120a1f0a20cb88e8983995',
-          ),
-          manualCheckRequired: 'Rule 19: Conduct standard random tare check if package seal shows handling marks.',
-          timestamp: DateTime.now(),
-        );
-
-      case MockScenario.fontDeficitAndMissingOrigin:
-        return ScanResult(
-          scanId: 'SCAN-2026-DL-1082',
-          status: 'ok',
-          category: category,
-          extractedFields: const ExtractedFields(
-            mrp: '₹45.00 (Incl. of all taxes)',
-            netQuantity: '200 g',
-            manufacturerName: 'Hindustan Consumer Goods Pvt Ltd',
-            manufacturerAddress: 'Plot 44, Okhla Phase III, New Delhi 110020',
-            mfgDate: '11/2025',
-            consumerCare: 'support@hindustanconsumer.in | 1800-11-4455',
-          ),
-          measurements: const Measurements(
-            mmPerPixel: 0.076,
-            fontHeightMm: 1.35,
-            tableIMinimumMm: 2.00,
-            principalDisplayAreaSqCm: 140.0,
-          ),
-          violations: const [
-            Violation(
-              field: 'font_height',
-              ruleReference: 'Table I - Font Minimums',
-              description: 'Measured numeral font height is 1.35 mm; statutory minimum is 2.00 mm for PDP area 100-200 cm² (Deficit: 0.65 mm).',
-              severity: 'Moderate',
-              remedy: 'Increase font size to minimum 2.0 mm in future print runs.',
-            ),
-            Violation(
-              field: 'country_of_origin',
-              ruleReference: 'Rule 6(1)(e) - Mandatory Origin',
-              description: 'Country of Origin declaration is completely missing from principal display panel.',
-              severity: 'Critical',
-              remedy: 'Print "Country of Origin: India" prominently in equal size on the PDP.',
-            ),
-          ],
-          severity: 'Critical',
-          manufacturer: const ManufacturerResult(
-            manufacturerId: 'MFR-IND-00129',
-            matchType: 'exact',
-            mhiScore: 68.0,
-          ),
-          evidence: const EvidenceManifest(
-            photoUrl: 'minio://legalmetry-evidence/scans/SCAN-2026-DL-1082.jpg',
-            sha256Hash: 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
-          ),
-          manualCheckRequired: 'Sixth Schedule: Check gross vs net weight tolerance band (maximum permissible error ±4.5g).',
-          timestamp: DateTime.now(),
-        );
-
-      case MockScenario.noCoinDetected:
-        return ScanResult(
-          scanId: 'SCAN-2026-DL-1083',
-          status: 'no_coin_detected',
-          category: category,
-          extractedFields: const ExtractedFields(
-            mrp: '₹120.00',
-            netQuantity: '1 kg',
-            manufacturerName: 'CleanCare Products India Ltd',
-            manufacturerAddress: 'Industrial Area, Haridwar',
-            mfgDate: '10/2025',
-            consumerCare: '1800-44-3322',
-          ),
-          measurements: const Measurements(),
-          violations: const [
-            Violation(
-              field: 'calibration',
-              ruleReference: 'Standard Reference Protocol',
-              description: 'Reference coin not detected in image. Physical mm font measurements could not be calibrated.',
-              severity: 'Minor',
-              remedy: 'Retake photo placing a valid standard coin flat on the package surface.',
-            ),
-          ],
-          severity: 'Minor',
-          manualCheckRequired: 'Please re-scan with a reference coin to obtain legal font measurements.',
-          timestamp: DateTime.now(),
-        );
-
-      case MockScenario.lowConfidenceOcr:
-        return ScanResult(
-          scanId: 'SCAN-2026-DL-1084',
-          status: 'low_confidence',
-          category: category,
-          extractedFields: const ExtractedFields(
-            mrp: '₹??.00',
-            netQuantity: '100 ml',
-            manufacturerName: 'Aura Cosmetics Ltd',
-            manufacturerAddress: null,
-            mfgDate: '??/2025',
-            consumerCare: null,
-          ),
-          measurements: const Measurements(
-            mmPerPixel: 0.080,
-            fontHeightMm: 1.10,
-            tableIMinimumMm: 1.50,
-            principalDisplayAreaSqCm: 60.0,
-          ),
-          violations: const [
-            Violation(
-              field: 'ocr_confidence',
-              ruleReference: 'Confidence Router (Tiered Evaluation)',
-              description: 'OCR confidence is below 70% due to curved bottle glare. Requires manual inspector verification.',
-              severity: 'Moderate',
-              remedy: 'Verify manufacturer address and MRP physically before issuing statutory notice.',
-            ),
-          ],
-          severity: 'Moderate',
-          manualCheckRequired: 'Curved Surface Check: Re-verify text legibility across curved perimeter.',
-          timestamp: DateTime.now(),
-        );
-    }
-  }
-}
-
-enum MockScenario {
-  compliant,
-  fontDeficitAndMissingOrigin,
-  noCoinDetected,
-  lowConfidenceOcr,
 }
