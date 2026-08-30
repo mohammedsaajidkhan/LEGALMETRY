@@ -1,3 +1,13 @@
+// ==============================================================================
+// LEGALMETRY — Camera Capture Screen (Person 2 / Module 1.2)
+// Track 2: Capture & Ingest
+//
+// Features:
+// - Camera preview with ₹10 coin alignment guide overlay (CoinCalibrationUi)
+// - Category tag with direct picker navigation (CategorySelectorScreen)
+// - 48px touch targets and GIGW 3.0 accessibility standards
+// ==============================================================================
+
 import 'dart:io';
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
@@ -5,6 +15,8 @@ import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 import '../core/theme/app_theme.dart';
+import 'coin_calibration_ui.dart';
+import '../category/category_selector_screen.dart';
 
 class CameraScreen extends StatefulWidget {
   final String category;
@@ -20,10 +32,12 @@ class _CameraScreenState extends State<CameraScreen> {
   bool _isInitializing = true;
   bool _isCapturing = false;
   String? _error;
+  late String _currentCategory;
 
   @override
   void initState() {
     super.initState();
+    _currentCategory = widget.category;
     _setupCamera();
   }
 
@@ -82,12 +96,9 @@ class _CameraScreenState extends State<CameraScreen> {
 
       if (!mounted) return;
 
-      // Post-capture quality/coin checks happen server-side (or via a local
-      // call to capture_ingest) on the next screen — no live overlay here
-      // per current MVP scope.
       Navigator.of(context).pushNamed(
         '/scan-review',
-        arguments: {'imagePath': savedPath, 'category': widget.category},
+        arguments: {'imagePath': savedPath, 'category': _currentCategory},
       );
     } catch (e) {
       setState(() {
@@ -136,31 +147,55 @@ class _CameraScreenState extends State<CameraScreen> {
         children: [
           CameraPreview(_controller!),
 
-          // Category reminder chip — top-left, per B2 spec
+          // Coin Reference Calibration Reticle Overlay
+          const CoinCalibrationUi(),
+
+          // Category Selector Chip (Top-Left)
           Positioned(
             top: 48,
             left: 16,
             child: Semantics(
-              label: 'Selected category: ${widget.category}',
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(
-                  color: AppTheme.primary.withValues(alpha: 0.85),
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Text(
-                  widget.category,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
+              label: 'Selected category: $_currentCategory. Tap to change.',
+              button: true,
+              child: InkWell(
+                onTap: () async {
+                  await Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => const CategorySelectorScreen(),
+                    ),
+                  );
+                },
+                borderRadius: BorderRadius.circular(16),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: AppTheme.primaryNavy.withOpacity(0.85),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: Colors.white24),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.category_outlined, color: Colors.white, size: 14),
+                      const SizedBox(width: 6),
+                      Text(
+                        _currentCategory,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      const Icon(Icons.arrow_drop_down, color: Colors.white, size: 16),
+                    ],
                   ),
                 ),
               ),
             ),
           ),
 
-          // Shutter button — bottom-center
+          // Shutter Button (Bottom-Center)
           Positioned(
             bottom: 32,
             left: 0,
@@ -172,14 +207,14 @@ class _CameraScreenState extends State<CameraScreen> {
                 child: GestureDetector(
                   onTap: _isCapturing ? null : _capture,
                   child: Container(
-                    width: 72,
-                    height: 72,
+                    width: 76,
+                    height: 76,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       color: _isCapturing
-                          ? AppTheme.primary.withValues(alpha: 0.4)
+                          ? AppTheme.primaryNavy.withOpacity(0.4)
                           : Colors.white,
-                      border: Border.all(color: AppTheme.primary, width: 4),
+                      border: Border.all(color: AppTheme.primaryNavy, width: 4),
                     ),
                     child: _isCapturing
                         ? const Padding(
