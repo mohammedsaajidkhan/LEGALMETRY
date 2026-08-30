@@ -31,7 +31,6 @@ class _RoleBasedRouterState extends State<RoleBasedRouter> {
 
   @override
   Widget build(BuildContext context) {
-<<<<<<< HEAD
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
@@ -103,11 +102,11 @@ class _ProfilePlaceholderScreen extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Inspector R. Sharma', style: AppTheme.headingMedium.copyWith(
+                        Text('Field Inspector', style: AppTheme.headingMedium.copyWith(
                           color: isDark ? Colors.white : AppTheme.primaryNavy,
                         )),
                         const SizedBox(height: 2),
-                        const Text('Zone: North District • ID: LM-DL-2024', style: AppTheme.caption),
+                        const Text('Zone: Enforcement Division • ID: LM-INSP-2026', style: AppTheme.caption),
                         const SizedBox(height: 2),
                         const Text('Department of Legal Metrology', style: AppTheme.caption),
                       ],
@@ -122,20 +121,17 @@ class _ProfilePlaceholderScreen extends StatelessWidget {
               child: OutlinedButton.icon(
                 onPressed: () {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Logged out successfully.')),
+                    const SnackBar(content: Text('Inspector session active.')),
                   );
                 },
                 style: AppTheme.secondaryButtonStyle,
-                icon: const Icon(Icons.logout),
-                label: const Text('Sign Out'),
+                icon: const Icon(Icons.check_circle_outline),
+                label: const Text('Active Field Session'),
               ),
             ),
           ],
         ),
       ),
     );
-=======
-    return const CameraScreen(category: 'General');
->>>>>>> capture-cv
   }
 }

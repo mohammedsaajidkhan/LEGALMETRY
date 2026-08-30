@@ -1,10 +1,13 @@
 // ==============================================================================
-// LEGALMETRY — Inspector Dashboard Screen (Screen B6 / Module 1.5/1.6)
+// LEGALMETRY — Inspector Dashboard Screen (Screen B6 / 80% Target Scope)
 // Track 5: UI / Reports (Person 5)
 //
 // Governing Standard: GIGW 3.0 / UI Design Context Document B6 & Part C
-// Displays live inspector scan history with severity left borders, real stat
-// counters, and GIGW plain-language empty states on fresh installation.
+// Features:
+// 1. Inspector's own scan history with severity left borders.
+// 2. Simple risk-sorted manufacturer list (ranked worst-first by dynamic MHI).
+// 3. Dynamic Jan Vishwas improvement notices.
+// 4. Zero hardcoded mock data — displays GIGW 3.0 empty states on clean install.
 // ==============================================================================
 
 import 'package:flutter/material.dart';
@@ -19,12 +22,26 @@ class InspectorDashboard extends StatefulWidget {
   State<InspectorDashboard> createState() => _InspectorDashboardState();
 }
 
-class _InspectorDashboardState extends State<InspectorDashboard> {
+class _InspectorDashboardState extends State<InspectorDashboard> with SingleTickerProviderStateMixin {
+  late TabController _tabController;
+  bool _isHindi = false;
   bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 2, vsync: this);
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
 
   Future<void> _handleRefresh() async {
     setState(() => _isLoading = true);
-    await Future.delayed(const Duration(milliseconds: 400));
+    await Future.delayed(const Duration(milliseconds: 350));
     if (mounted) setState(() => _isLoading = false);
   }
 
@@ -35,98 +52,107 @@ class _InspectorDashboardState extends State<InspectorDashboard> {
     final totalScans = ScanStore.instance.totalScans;
     final totalViolations = ScanStore.instance.totalViolations;
     final totalOpenNotices = ScanStore.instance.totalOpenNotices;
+    final manufacturers = ScanStore.instance.riskSortedManufacturers;
 
     return Scaffold(
       appBar: AppBar(
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-          children: const [
-            Text('Inspector Dashboard', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-            Text('Field Compliance History & Notices', style: TextStyle(fontSize: 12, color: Colors.white70)),
+          children: [
+            Text(
+              _isHindi ? 'निरीक्षक डैशबोर्ड' : 'Inspector Dashboard',
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+            Text(
+              _isHindi ? 'अनुपालन इतिहास एवं निर्माता जोखिम सूची' : 'Scan History & Manufacturer Risk Rankings',
+              style: const TextStyle(fontSize: 12, color: Colors.white70),
+            ),
           ],
         ),
         actions: [
+          // Persistent Language Toggle (GIGW 3.0 Standard)
+          TextButton.icon(
+            onPressed: () => setState(() => _isHindi = !_isHindi),
+            icon: const Icon(Icons.translate, color: Colors.white, size: 18),
+            label: Text(
+              _isHindi ? 'EN' : 'हिन्दी',
+              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+            ),
+          ),
           IconButton(
             icon: const Icon(Icons.refresh),
-            tooltip: 'Refresh Inspections',
+            tooltip: 'Refresh Data',
             onPressed: _handleRefresh,
           ),
         ],
+        bottom: TabBar(
+          controller: _tabController,
+          indicatorColor: Colors.white,
+          indicatorWeight: 3.0,
+          labelColor: Colors.white,
+          unselectedLabelColor: Colors.white70,
+          labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+          tabs: [
+            Tab(
+              icon: const Icon(Icons.history, size: 18),
+              text: _isHindi ? 'स्कैन इतिहास ($totalScans)' : 'My Scans ($totalScans)',
+            ),
+            Tab(
+              icon: const Icon(Icons.analytics_outlined, size: 18),
+              text: _isHindi ? 'निर्माता जोखिम (${manufacturers.length})' : 'Manufacturer Risk (${manufacturers.length})',
+            ),
+          ],
+        ),
       ),
       body: RefreshIndicator(
         onRefresh: _handleRefresh,
-        child: SingleChildScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          padding: const EdgeInsets.all(AppTheme.spacing16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // Summary Metrics Top Row (Real Dynamic Stats)
-              _buildStatsRow(totalScans, totalViolations, totalOpenNotices, isDark),
-              const SizedBox(height: AppTheme.spacing24),
+        child: Column(
+          children: [
+            // Top Dynamic Stat Cards Row
+            Padding(
+              padding: const EdgeInsets.fromLTRB(AppTheme.spacing16, AppTheme.spacing16, AppTheme.spacing16, AppTheme.spacing8),
+              child: _buildStatsRow(totalScans, totalViolations, manufacturers.length, totalOpenNotices, isDark),
+            ),
 
-              // Section 1: Recent Scans Header
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            // Tab Views for Scan History and Manufacturer Risk
+            Expanded(
+              child: TabBarView(
+                controller: _tabController,
                 children: [
-                  Text(
-                    'Recent Inspections',
-                    style: AppTheme.headingMedium.copyWith(
-                      color: isDark ? Colors.white : AppTheme.primaryNavy,
-                    ),
-                  ),
-                  Text(
-                    totalScans == 0 ? '0 logged' : '$totalScans logged',
-                    style: AppTheme.caption,
-                  ),
+                  // Tab 1: Inspector's Own Scan History & Active Notices
+                  _buildScanHistoryTab(scans, isDark),
+
+                  // Tab 2: Simple Risk-Sorted Manufacturer List (Worst-First)
+                  _buildManufacturerRiskTab(manufacturers, isDark),
                 ],
               ),
-              const SizedBox(height: AppTheme.spacing12),
-
-              // Section 1 Content: List or GIGW Empty State
-              if (scans.isEmpty)
-                _buildEmptyScansState(context, isDark)
-              else
-                ...scans.map((scan) => _buildScanRowItem(context, scan, isDark)),
-
-              const SizedBox(height: AppTheme.spacing28),
-
-              // Section 2: Statutory Improvement Notices (Jan Vishwas Act, 2026)
-              Text(
-                'Active Statutory Notices',
-                style: AppTheme.headingMedium.copyWith(
-                  color: isDark ? Colors.white : AppTheme.primaryNavy,
-                ),
-              ),
-              const SizedBox(height: AppTheme.spacing12),
-
-              // Section 2 Content: Notice Cards or Empty State
-              if (totalOpenNotices == 0)
-                _buildEmptyNoticesState(isDark)
-              else
-                ...scans
-                    .where((s) => s.hasViolations)
-                    .map((s) => _buildActiveNoticeCard(s, isDark)),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
   }
 
-  Widget _buildStatsRow(int totalScans, int totalViolations, int totalOpenNotices, bool isDark) {
+  // ---------------------------------------------------------------------------
+  // Summary Stats Row (Real Dynamic Metrics)
+  // ---------------------------------------------------------------------------
+  Widget _buildStatsRow(int totalScans, int totalViolations, int totalMfrs, int totalNotices, bool isDark) {
     return Row(
       children: [
         Expanded(
-          child: _buildStatTile('Total Scans', '$totalScans', AppTheme.secondaryBlue, isDark),
+          child: _buildStatTile(_isHindi ? 'कुल स्कैन' : 'Total Scans', '$totalScans', AppTheme.secondaryBlue, isDark),
         ),
-        const SizedBox(width: AppTheme.spacing12),
+        const SizedBox(width: AppTheme.spacing8),
         Expanded(
-          child: _buildStatTile('Violations', '$totalViolations', AppTheme.criticalRed, isDark),
+          child: _buildStatTile(_isHindi ? 'उल्लंघन' : 'Violations', '$totalViolations', AppTheme.criticalRed, isDark),
         ),
-        const SizedBox(width: AppTheme.spacing12),
+        const SizedBox(width: AppTheme.spacing8),
         Expanded(
-          child: _buildStatTile('Open Notices', '$totalOpenNotices', AppTheme.moderateAmber, isDark),
+          child: _buildStatTile(_isHindi ? 'निर्माता' : 'Entities', '$totalMfrs', AppTheme.primaryNavy, isDark),
+        ),
+        const SizedBox(width: AppTheme.spacing8),
+        Expanded(
+          child: _buildStatTile(_isHindi ? 'सक्रिय नोटिस' : 'Notices', '$totalNotices', AppTheme.moderateAmber, isDark),
         ),
       ],
     );
@@ -134,7 +160,7 @@ class _InspectorDashboardState extends State<InspectorDashboard> {
 
   Widget _buildStatTile(String label, String count, Color accent, bool isDark) {
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
+      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
       decoration: BoxDecoration(
         color: isDark ? AppTheme.darkSurface : AppTheme.surfaceLight,
         borderRadius: BorderRadius.circular(AppTheme.radiusMd),
@@ -142,65 +168,65 @@ class _InspectorDashboardState extends State<InspectorDashboard> {
       ),
       child: Column(
         children: [
-          Text(count, style: AppTheme.headingLarge.copyWith(color: accent, fontSize: 22)),
+          Text(count, style: AppTheme.headingLarge.copyWith(color: accent, fontSize: 20)),
           const SizedBox(height: 2),
-          Text(label, style: AppTheme.caption.copyWith(fontSize: 11), textAlign: TextAlign.center),
-        ],
-      ),
-    );
-  }
-
-  /// GIGW 3.0 Standard Empty State for Scans List
-  Widget _buildEmptyScansState(BuildContext context, bool isDark) {
-    return Container(
-      padding: const EdgeInsets.all(AppTheme.spacing24),
-      decoration: AppTheme.cardDecoration(isDark: isDark),
-      child: Column(
-        children: [
-          Icon(Icons.qr_code_scanner, size: 48, color: isDark ? Colors.white38 : AppTheme.borderGrey),
-          const SizedBox(height: AppTheme.spacing12),
           Text(
-            'No Inspections Recorded Yet',
-            style: AppTheme.headingSmall.copyWith(
-              color: isDark ? Colors.white70 : AppTheme.textPrimary,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            'Capture a packaged commodity photo with a standard coin to start automated compliance verification.',
+            label,
+            style: AppTheme.caption.copyWith(fontSize: 10),
             textAlign: TextAlign.center,
-            style: AppTheme.caption,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
         ],
       ),
     );
   }
 
-  /// GIGW 3.0 Standard Empty State for Notices
-  Widget _buildEmptyNoticesState(bool isDark) {
-    return Container(
-      padding: const EdgeInsets.all(AppTheme.spacing20),
-      decoration: AppTheme.cardDecoration(isDark: isDark),
-      child: Row(
+  // ---------------------------------------------------------------------------
+  // Tab 1: Scan History & Active Notices
+  // ---------------------------------------------------------------------------
+  Widget _buildScanHistoryTab(List<ScanResult> scans, bool isDark) {
+    if (scans.isEmpty) {
+      return _buildEmptyScansState(isDark);
+    }
+
+    final activeNotices = scans.where((s) => s.hasViolations).toList();
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(AppTheme.spacing16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const Icon(Icons.check_circle_outline, color: AppTheme.minorGreen, size: 28),
-          const SizedBox(width: AppTheme.spacing12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('No Pending Statutory Notices', style: AppTheme.bodyBold),
-                const SizedBox(height: 2),
-                Text('All inspected commodities are either compliant or have resolved notices.', style: AppTheme.caption),
-              ],
+          // Section: Recent Inspections
+          Text(
+            _isHindi ? 'हाल ही में किए गए स्कैन' : 'Recent Inspections',
+            style: AppTheme.headingMedium.copyWith(
+              color: isDark ? Colors.white : AppTheme.primaryNavy,
+              fontSize: 15,
             ),
           ),
+          const SizedBox(height: AppTheme.spacing8),
+          ...scans.map((scan) => _buildScanRowItem(scan, isDark)),
+
+          // Section: Active Jan Vishwas Notices (if any)
+          if (activeNotices.isNotEmpty) ...[
+            const SizedBox(height: AppTheme.spacing20),
+            Text(
+              _isHindi ? 'सक्रिय वैधानिक सुधार नोटिस (जन विश्वास अधिनियम, 2026)' : 'Active Improvement Notices (Jan Vishwas Act, 2026)',
+              style: AppTheme.headingMedium.copyWith(
+                color: isDark ? Colors.white : AppTheme.primaryNavy,
+                fontSize: 15,
+              ),
+            ),
+            const SizedBox(height: AppTheme.spacing8),
+            ...activeNotices.map((s) => _buildActiveNoticeCard(s, isDark)),
+          ],
         ],
       ),
     );
   }
 
-  Widget _buildScanRowItem(BuildContext context, ScanResult scan, bool isDark) {
+  Widget _buildScanRowItem(ScanResult scan, bool isDark) {
     final mfrText = scan.extractedFields.manufacturerName ??
         (scan.extractedFields.manufacturerAddress ?? 'Unidentified Entity');
 
@@ -300,6 +326,214 @@ class _InspectorDashboardState extends State<InspectorDashboard> {
             ],
           ),
         ],
+      ),
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // Tab 2: Simple Risk-Sorted Manufacturer List (Worst-First / Lowest MHI)
+  // ---------------------------------------------------------------------------
+  Widget _buildManufacturerRiskTab(List<ManufacturerRiskSummary> manufacturers, bool isDark) {
+    if (manufacturers.isEmpty) {
+      return _buildEmptyRiskState(isDark);
+    }
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(AppTheme.spacing16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Section Subtitle
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                _isHindi ? 'जोखिम-आधारित रैंकिंग (निम्नतम MHI पहले)' : 'Risk-Ranked Entities (Worst-First)',
+                style: AppTheme.headingMedium.copyWith(
+                  color: isDark ? Colors.white : AppTheme.primaryNavy,
+                  fontSize: 15,
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                decoration: BoxDecoration(
+                  color: AppTheme.secondaryBlue.withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(AppTheme.radiusSm),
+                ),
+                child: Text(
+                  'MHI Metric',
+                  style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: AppTheme.secondaryBlue),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppTheme.spacing8),
+
+          // Render each risk summary card
+          ...manufacturers.map((mfr) => _buildManufacturerRiskCard(mfr, isDark)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildManufacturerRiskCard(ManufacturerRiskSummary mfr, bool isDark) {
+    final mhi = mfr.mhiScore;
+    final Color mhiColor = mhi >= 80
+        ? AppTheme.compliantGreen
+        : (mhi >= 50 ? AppTheme.moderateAmber : AppTheme.criticalRed);
+    final String riskTier = mhi >= 80 ? 'LOW RISK' : (mhi >= 50 ? 'MEDIUM RISK' : 'HIGH RISK');
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: AppTheme.spacing10),
+      padding: const EdgeInsets.all(AppTheme.spacing12),
+      decoration: BoxDecoration(
+        color: isDark ? AppTheme.darkSurface : AppTheme.surfaceLight,
+        borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+        border: Border(
+          left: BorderSide(color: mhiColor, width: 4.0),
+          top: BorderSide(color: isDark ? AppTheme.darkBorder : AppTheme.borderGrey),
+          right: BorderSide(color: isDark ? AppTheme.darkBorder : AppTheme.borderGrey),
+          bottom: BorderSide(color: isDark ? AppTheme.darkBorder : AppTheme.borderGrey),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(mfr.name, style: AppTheme.bodyBold.copyWith(fontSize: 14)),
+                    if (mfr.entityId != null) ...[
+                      const SizedBox(height: 2),
+                      Text('Entity ID: ${mfr.entityId}', style: AppTheme.caption.copyWith(fontSize: 11)),
+                    ],
+                  ],
+                ),
+              ),
+              // MHI Score Gauge Badge
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: mhiColor.withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+                  border: Border.all(color: mhiColor, width: 1.2),
+                ),
+                child: Column(
+                  children: [
+                    Text(
+                      '${mhi.toStringAsFixed(0)} / 100',
+                      style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: mhiColor),
+                    ),
+                    Text(riskTier, style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: mhiColor)),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const Divider(height: AppTheme.spacing16),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Scans: ${mfr.totalScans} • Violations: ${mfr.totalViolations}',
+                style: AppTheme.caption.copyWith(fontWeight: FontWeight.w600),
+              ),
+              Row(
+                children: [
+                  if (mfr.criticalCount > 0)
+                    _buildMiniBadge('${mfr.criticalCount} Critical', AppTheme.criticalRed),
+                  if (mfr.moderateCount > 0) ...[
+                    const SizedBox(width: 4),
+                    _buildMiniBadge('${mfr.moderateCount} Moderate', AppTheme.moderateAmber),
+                  ],
+                  if (mfr.minorCount > 0) ...[
+                    const SizedBox(width: 4),
+                    _buildMiniBadge('${mfr.minorCount} Minor', AppTheme.minorGreen),
+                  ],
+                ],
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMiniBadge(String text, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.15),
+        borderRadius: BorderRadius.circular(AppTheme.radiusSm),
+      ),
+      child: Text(
+        text,
+        style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: color),
+      ),
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // GIGW 3.0 Standard Empty States
+  // ---------------------------------------------------------------------------
+  Widget _buildEmptyScansState(bool isDark) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(AppTheme.spacing24),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.qr_code_scanner, size: 56, color: isDark ? Colors.white38 : AppTheme.borderGrey),
+            const SizedBox(height: AppTheme.spacing16),
+            Text(
+              _isHindi ? 'कोई निरीक्षण रिकॉर्ड नहीं मिला' : 'No Inspections Recorded Yet',
+              style: AppTheme.headingMedium.copyWith(
+                color: isDark ? Colors.white : AppTheme.primaryNavy,
+              ),
+            ),
+            const SizedBox(height: AppTheme.spacing8),
+            Text(
+              _isHindi
+                  ? 'निरीक्षण शुरू करने के लिए विधिक मापविज्ञान स्कैनर द्वारा उत्पाद की तस्वीर लें।'
+                  : 'Capture or upload a packaged commodity photo with a standard coin to record inspection findings.',
+              textAlign: TextAlign.center,
+              style: AppTheme.caption.copyWith(fontSize: 13),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmptyRiskState(bool isDark) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(AppTheme.spacing24),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.query_stats, size: 56, color: isDark ? Colors.white38 : AppTheme.borderGrey),
+            const SizedBox(height: AppTheme.spacing16),
+            Text(
+              _isHindi ? 'कोई निर्माता जोखिम डेटा उपलब्ध नहीं' : 'No Manufacturer Risk Data',
+              style: AppTheme.headingMedium.copyWith(
+                color: isDark ? Colors.white : AppTheme.primaryNavy,
+              ),
+            ),
+            const SizedBox(height: AppTheme.spacing8),
+            Text(
+              _isHindi
+                  ? 'जैसे ही आप उत्पादों का निरीक्षण करेंगे, विधिक स्वास्थ्य सूचकांक (MHI) यहां स्वचालित रूप से परिकलित होगा।'
+                  : 'As you inspect products, the Manufacturer Health Index (MHI) will dynamically calculate and rank entities here worst-first.',
+              textAlign: TextAlign.center,
+              style: AppTheme.caption.copyWith(fontSize: 13),
+            ),
+          ],
+        ),
       ),
     );
   }

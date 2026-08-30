@@ -10,14 +10,15 @@
 import 'package:flutter/material.dart';
 
 class AppTheme {
-<<<<<<< HEAD
   AppTheme._();
 
   // ---------------------------------------------------------------------------
   // A2. COLOR SYSTEM (Reflects UI Design Context Document Exactly)
   // ---------------------------------------------------------------------------
   static const Color primaryNavy = Color(0xFF1A3A5C); // Headers, primary buttons, app bar, gov identity
+  static const Color primary = primaryNavy; // Alias for team interoperability
   static const Color secondaryBlue = Color(0xFF2860A0); // Links, secondary actions, section headers
+  static const Color secondary = secondaryBlue; // Alias
   static const Color criticalRed = Color(0xFFD0021B); // Critical violations — universal meaning
   static const Color moderateAmber = Color(0xFFF5A623); // Moderate violations — universal meaning
   static const Color minorGreen = Color(0xFF7ED321); // Minor violations / Compliant status
@@ -168,16 +169,6 @@ class AppTheme {
     border: Border.all(
       color: isDark ? darkBorder : borderGrey,
       width: 1.0,
-=======
-  static const Color primary = Color(0xFF1E3A8A);
-
-  static final ThemeData lightTheme = ThemeData(
-    useMaterial3: true,
-    colorScheme: ColorScheme.fromSeed(
-      seedColor: primary,
-      primary: primary,
-      error: const Color(0xFFDC2626), // Critical Severity
->>>>>>> capture-cv
     ),
   );
 
@@ -233,11 +224,14 @@ class AppTheme {
       case 'PENDING_SUPERVISOR_VERIFICATION':
       case 'ESCALATED_PENDING_VERIFICATION':
       case 'LOW_CONFIDENCE':
+      case 'NO_COIN_DETECTED':
         return needsReviewGold;
 
       case 'MINOR':
       case 'COMPLIANT':
       case 'PASS':
+      case 'NONE':
+      case 'OK':
       case 'CLOSED':
       case 'RESOLVED':
         return minorGreen;
@@ -254,7 +248,7 @@ class AppTheme {
 
   /// Returns human-readable label for status/severity
   static String severityLabel(String? status) {
-    if (status == null || status.isEmpty) return 'Unknown';
+    if (status == null || status.isEmpty) return 'Compliant';
     final normalized = status.toUpperCase().trim();
     switch (normalized) {
       case 'CRITICAL':
@@ -264,6 +258,8 @@ class AppTheme {
       case 'MINOR':
         return 'Minor';
       case 'COMPLIANT':
+      case 'NONE':
+      case 'OK':
         return 'Compliant';
       case 'NEEDS_REVIEW':
         return 'Needs Review';

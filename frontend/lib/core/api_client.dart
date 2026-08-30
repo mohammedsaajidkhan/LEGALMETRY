@@ -1,9 +1,9 @@
 // ==============================================================================
-// LEGALMETRY — Backend API Client, Data Models & Scan State Store
+// LEGALMETRY — Backend API Client, Data Models & Dynamic Scan Store
 // Track 5: UI / Reports (Person 5)
 //
 // Aligned with shared/api_contract.yaml (POST /scan)
-// Clean production-ready client with zero hardcoded mock data.
+// Clean production-ready client with dynamic risk calculation & zero mock data.
 // ==============================================================================
 
 import 'dart:convert';
@@ -243,6 +243,31 @@ class ScanResult {
   }
 }
 
+/// Dynamic Manufacturer Risk Summary calculated solely from real entered scans
+class ManufacturerRiskSummary {
+  final String name;
+  final String? entityId;
+  final double mhiScore;
+  final int totalScans;
+  final int totalViolations;
+  final int criticalCount;
+  final int moderateCount;
+  final int minorCount;
+  final DateTime lastInspected;
+
+  const ManufacturerRiskSummary({
+    required this.name,
+    this.entityId,
+    required this.mhiScore,
+    required this.totalScans,
+    required this.totalViolations,
+    required this.criticalCount,
+    required this.moderateCount,
+    required this.minorCount,
+    required this.lastInspected,
+  });
+}
+
 /// Centralized In-Memory & Backend Synchronized Scan Store
 class ScanStore {
   ScanStore._();
@@ -262,6 +287,77 @@ class ScanStore {
 
   void clear() {
     _scans.clear();
+  }
+
+  /// Dynamically computes risk-ranked manufacturer list sorted worst-first (lowest MHI score)
+  List<ManufacturerRiskSummary> get riskSortedManufacturers {
+    if (_scans.isEmpty) return [];
+
+    final Map<String, List<ScanResult>> grouped = {};
+
+    for (final scan in _scans) {
+      final name = scan.extractedFields.manufacturerName?.trim() ??
+          (scan.extractedFields.manufacturerAddress?.trim() ?? 'Unknown Entity');
+      grouped.putIfAbsent(name, () => []).add(scan);
+    }
+
+    final List<ManufacturerRiskSummary> summaries = [];
+
+    grouped.forEach((name, scanList) {
+      int totalViolations = 0;
+      int critical = 0;
+      int moderate = 0;
+      int minor = 0;
+      String? entityId;
+      DateTime lastDate = scanList.first.timestamp;
+
+      for (final s in scanList) {
+        if (s.manufacturer?.manufacturerId != null) {
+          entityId = s.manufacturer!.manufacturerId;
+        }
+        if (s.timestamp.isAfter(lastDate)) {
+          lastDate = s.timestamp;
+        }
+        for (final v in s.violations) {
+          totalViolations++;
+          final sev = v.severity.toUpperCase();
+          if (sev == 'CRITICAL') {
+            critical++;
+          } else if (sev == 'MODERATE') {
+            moderate++;
+          } else {
+            minor++;
+          }
+        }
+      }
+
+      // MHI Formula (Module 2.10): MHI = 100 - weighted sum of Critical/Moderate/Minor
+      final double penalty = (critical * 30.0) + (moderate * 15.0) + (minor * 5.0);
+      final double calculatedScore = (100.0 - penalty).clamp(0.0, 100.0);
+
+      summaries.add(
+        ManufacturerRiskSummary(
+          name: name,
+          entityId: entityId,
+          mhiScore: calculatedScore,
+          totalScans: scanList.length,
+          totalViolations: totalViolations,
+          criticalCount: critical,
+          moderateCount: moderate,
+          minorCount: minor,
+          lastInspected: lastDate,
+        ),
+      );
+    });
+
+    // Sort worst-first (lowest MHI score first, then highest violations)
+    summaries.sort((a, b) {
+      final scoreCompare = a.mhiScore.compareTo(b.mhiScore);
+      if (scoreCompare != 0) return scoreCompare;
+      return b.totalViolations.compareTo(a.totalViolations);
+    });
+
+    return summaries;
   }
 }
 
