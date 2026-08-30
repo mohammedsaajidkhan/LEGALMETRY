@@ -1,20 +1,23 @@
-﻿#!/bin/sh
-# MinIO Bucket Initialization Script for LEGALMETRY
-# Creates required storage buckets with retry until MinIO is healthy
+#!/bin/sh
+# ==============================================================================
+# LEGALMETRY — MinIO Object Storage Bucket Initializer (Person 1 - Infra)
+# Initializes evidence and reports storage buckets with download policies
+# ==============================================================================
 
 set -e
 
-echo "Waiting for MinIO server to be available at http://minio:9000..."
-until /usr/bin/mc alias set legalmetry http://minio:9000 "${MINIO_ROOT_USER:-minioadmin}" "${MINIO_ROOT_PASSWORD:-minioadmin}"; do
-    echo "MinIO server not ready yet... retrying in 2 seconds"
+echo "Waiting for MinIO server to be healthy..."
+until (/usr/bin/mc alias set legalmetry http://minio:9000 minioadmin minioadmin123); do
+    echo "MinIO not ready yet, retrying in 2 seconds..."
     sleep 2
 done
 
-echo "Creating standard buckets..."
+echo "Creating standard LEGALMETRY storage buckets..."
 /usr/bin/mc mb --ignore-existing legalmetry/legalmetry-evidence
 /usr/bin/mc mb --ignore-existing legalmetry/legalmetry-reports
 
-echo "Configuring public read policy for report exports..."
-/usr/bin/mc anonymous set download legalmetry/legalmetry-reports || true
+echo "Configuring public read access for official inspection reports..."
+/usr/bin/mc anonymous set download legalmetry/legalmetry-reports
 
-echo "MinIO bucket initialization completed successfully."
+echo "MinIO buckets initialized successfully."
+exit 0

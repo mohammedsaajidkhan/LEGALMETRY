@@ -1,3 +1,14 @@
 {
-  "first_schedule_exemptions": []
+  "schedule_name": "First Schedule - Maximum Permissible Errors (MPE)",
+  "weight_volume_mpe_tolerances": [
+    { "min_qty_g_ml": 5, "max_qty_g_ml": 50, "mpe_percent": 9.0, "mpe_fixed_g_ml": null },
+    { "min_qty_g_ml": 50, "max_qty_g_ml": 100, "mpe_percent": null, "mpe_fixed_g_ml": 4.5 },
+    { "min_qty_g_ml": 100, "max_qty_g_ml": 200, "mpe_percent": 4.5, "mpe_fixed_g_ml": null },
+    { "min_qty_g_ml": 200, "max_qty_g_ml": 300, "mpe_percent": null, "mpe_fixed_g_ml": 9.0 },
+    { "min_qty_g_ml": 300, "max_qty_g_ml": 500, "mpe_percent": 3.0, "mpe_fixed_g_ml": null },
+    { "min_qty_g_ml": 500, "max_qty_g_ml": 1000, "mpe_percent": null, "mpe_fixed_g_ml": 15.0 },
+    { "min_qty_g_ml": 1000, "max_qty_g_ml": 10000, "mpe_percent": 1.5, "mpe_fixed_g_ml": null },
+    { "min_qty_g_ml": 10000, "max_qty_g_ml": 15000, "mpe_percent": null, "mpe_fixed_g_ml": 150.0 },
+    { "min_qty_g_ml": 15000, "max_qty_g_ml": 50000, "mpe_percent": 1.0, "mpe_fixed_g_ml": null }
+  ]
 }
