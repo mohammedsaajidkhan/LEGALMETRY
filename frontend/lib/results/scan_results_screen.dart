@@ -12,6 +12,7 @@ import 'package:flutter/material.dart';
 import '../core/theme/app_theme.dart';
 import '../core/api_client.dart';
 import '../reports/report_export_screen.dart';
+import '../capture/camera_screen.dart';
 
 class ScanResultsScreen extends StatefulWidget {
   final ScanResult? initialResult;
@@ -109,6 +110,19 @@ class _ScanResultsScreenState extends State<ScanResultsScreen> {
                   : 'Capture or upload a packaged commodity photo with a reference coin to inspect declarations and measurements.',
               textAlign: TextAlign.center,
               style: AppTheme.caption.copyWith(fontSize: 13),
+            ),
+            const SizedBox(height: AppTheme.spacing20),
+            ElevatedButton.icon(
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => const CameraScreen(),
+                  ),
+                );
+              },
+              style: AppTheme.primaryButtonStyle,
+              icon: const Icon(Icons.camera_alt, size: 18),
+              label: Text(_isHindi ? 'नया उत्पाद स्कैन करें' : 'Start Inspection Scan'),
             ),
           ],
         ),

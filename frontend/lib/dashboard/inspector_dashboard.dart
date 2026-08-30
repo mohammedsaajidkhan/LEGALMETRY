@@ -14,6 +14,7 @@ import 'package:flutter/material.dart';
 import '../core/theme/app_theme.dart';
 import '../core/api_client.dart';
 import '../results/scan_results_screen.dart';
+import '../capture/camera_screen.dart';
 
 class InspectorDashboard extends StatefulWidget {
   const InspectorDashboard({super.key});
@@ -502,6 +503,19 @@ class _InspectorDashboardState extends State<InspectorDashboard> with SingleTick
                   : 'Capture or upload a packaged commodity photo with a standard coin to record inspection findings.',
               textAlign: TextAlign.center,
               style: AppTheme.caption.copyWith(fontSize: 13),
+            ),
+            const SizedBox(height: AppTheme.spacing20),
+            ElevatedButton.icon(
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => const CameraScreen(),
+                  ),
+                );
+              },
+              style: AppTheme.primaryButtonStyle,
+              icon: const Icon(Icons.camera_alt, size: 18),
+              label: Text(_isHindi ? 'नया उत्पाद स्कैन करें' : 'Start Inspection Scan'),
             ),
           ],
         ),
