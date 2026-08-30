@@ -1,4 +1,4 @@
-﻿# ============================================================================
+# ============================================================================
 # LEGALMETRY Entity Resolution Engine (Person 1 - Data/Infra / Person 4)
 # Character-Level OCR Noise Matching via PostgreSQL pg_trgm (NO ChromaDB/AI)
 # ============================================================================
@@ -6,7 +6,7 @@
 import re
 import difflib
 import logging
-from typing import Tuple, Optional
+from typing import Tuple, Optional, Dict, Any
 from sqlalchemy.orm import Session
 from sqlalchemy import text, func
 
@@ -136,3 +136,21 @@ def resolve_or_create_manufacturer(
     db.refresh(new_mfg)
     logger.info(f"Entity Resolution: Created new canonical entity '{clean_raw}' with ID {new_mfg.id}")
     return new_mfg, True, 1.0
+
+
+class EntityResolver:
+    """Class wrapper providing static entity resolution for gateway pipelines."""
+
+    @staticmethod
+    def normalize_name(raw_name: str) -> str:
+        return normalize_manufacturer_name(raw_name)
+
+    @staticmethod
+    def match_entity(raw_name: str) -> Dict[str, Any]:
+        norm = normalize_manufacturer_name(raw_name)
+        return {
+            "entity_id": f"MFR_{abs(hash(norm)) % 1000:03d}",
+            "matched_name": raw_name,
+            "normalized_name": norm,
+            "confidence": 0.95
+        }

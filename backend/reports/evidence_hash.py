@@ -77,3 +77,19 @@ def format_evidence_manifest(
         manifest["additional_angle_hashes"] = compute_multi_photo_hashes(additional_angles)
     
     return manifest
+
+
+class EvidenceHasher:
+    """Class wrapper providing static hashing methods for cross-module compatibility."""
+
+    @staticmethod
+    def compute_bytes_hash(data: Union[bytes, bytearray, io.BytesIO]) -> str:
+        return compute_sha256(data)
+
+    @staticmethod
+    def compute_sha256(data: Union[bytes, bytearray, io.BytesIO]) -> str:
+        return compute_sha256(data)
+
+    @staticmethod
+    def verify_integrity(photo_bytes: bytes, recorded_hash: str) -> bool:
+        return verify_evidence_integrity(photo_bytes, recorded_hash)

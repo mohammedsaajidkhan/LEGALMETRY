@@ -1,4 +1,4 @@
-﻿# ============================================================================
+# ============================================================================
 # LEGALMETRY Manufacturer Hazard Index (MHI) Calculator (Person 1 / Person 4)
 # Auditable Weighted Compliance Scoring Formula from PostgreSQL Violation History
 # ============================================================================
@@ -132,3 +132,15 @@ def get_risk_sorted_manufacturers(
         }
         for m in mfgs
     ]
+
+
+class MHICalculator:
+    """Class wrapper providing static MHI scoring calculations for gateway pipelines."""
+
+    @staticmethod
+    def calculate_mhi(critical_count: int = 0, moderate_count: int = 0, minor_count: int = 0, base_score: float = 100.0) -> float:
+        return calculate_mhi_score(critical_count, moderate_count, minor_count, base_score)
+
+    @staticmethod
+    def get_tier(score: float) -> str:
+        return get_risk_tier(score)
